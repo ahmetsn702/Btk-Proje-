@@ -12,11 +12,11 @@ inclusion: always
 
 ## Faz 0 — Hazırlık & Kurulum
 
-- [ ] Git repo'yu kurmak (monorepo veya `frontend/` + `backend/` ayrı)
-- [ ] Branch stratejisini belirlemek (`main`, `dev`, `feature/*`)
-- [ ] `.env.example` ve secret yönetimini ayarlamak
-- [ ] ESLint + Prettier + Husky pre-commit hook
-- [ ] Docker Compose (Postgres + Redis) ile local dev ortamı
+- [x] Git repo'yu kurmak (monorepo veya `frontend/` + `backend/` ayrı)
+- [x] Branch stratejisini belirlemek (`main`, `dev`, `feature/*`)
+- [x] `.env.example` ve secret yönetimini ayarlamak
+- [x] ESLint + Prettier + Husky pre-commit hook
+- [x] Docker Compose (Postgres + Redis) ile local dev ortamı
 - [ ] Issue/task board (GitHub Projects veya Linear)
 - [ ] Geliştirici 2 ile API kontratlarını (OpenAPI/Swagger şeması) konuşmak
 
@@ -24,17 +24,17 @@ inclusion: always
 
 ## Faz 1 — Veritabanı Tasarımı (PostgreSQL)
 
-- [ ] `users` tablosu (id, email, password_hash, wallet_address, created_at, ...)
-- [ ] `categories` tablosu (ürün kategorileri — CP kategorileriyle eşleşecek)
-- [ ] `products` tablosu (id, name, description, price_fiat, stock, category_id, images, ...)
-- [ ] `cart` ve `cart_items` tabloları
-- [ ] `orders` ve `order_items` tabloları (status, payment_status, shipping_address, ...)
-- [ ] `addresses` tablosu (kullanıcı adresleri)
-- [ ] `tasks` tablosu (Geliştirici 2 ile şema üzerinde uzlaşılacak)
-- [ ] `user_task_completions` tablosu
-- [ ] Migration tool (Prisma / TypeORM / Alembic) kurulumu
-- [ ] Seed data scripti (test ürünleri, kategoriler)
-- [ ] Index'ler ve foreign key constraint'ler
+- [x] `users` tablosu (id, email, password_hash, wallet_address, created_at, ...)
+- [x] `categories` tablosu (ürün kategorileri — CP kategorileriyle eşleşecek)
+- [x] `products` tablosu (id, name, description, price_fiat, stock, category_id, images, ...)
+- [x] `cart` ve `cart_items` tabloları
+- [x] `orders` ve `order_items` tabloları (status, payment_status, shipping_address, ...)
+- [x] `addresses` tablosu (kullanıcı adresleri)
+- [x] `tasks` tablosu (Geliştirici 2 ile şema üzerinde uzlaşılacak)
+- [x] `user_task_completions` tablosu
+- [x] Migration tool (Prisma / TypeORM / Alembic) kurulumu
+- [x] Seed data scripti (test ürünleri, kategoriler)
+- [x] Index'ler ve foreign key constraint'ler
 
 ---
 
