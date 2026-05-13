@@ -7,6 +7,6 @@ export default [
   ...tseslint.configs.recommended,
   prettier,
   {
-    ignores: ['**/node_modules/', '**/dist/', '**/.next/'],
+    ignores: ['**/node_modules/', '**/dist/', '**/.next/', '**/generated/'],
   },
 ];

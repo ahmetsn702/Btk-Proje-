@@ -40,18 +40,18 @@ inclusion: always
 
 ## Faz 2 — Backend: Kimlik Doğrulama & Kullanıcı Yönetimi
 
-- [ ] `POST /auth/register` (email + password)
-- [ ] `POST /auth/login` (JWT access + refresh token)
-- [ ] `POST /auth/refresh`
-- [ ] `POST /auth/logout`
+- [x] `POST /auth/register` (email + password)
+- [x] `POST /auth/login` (JWT access + refresh token)
+- [x] `POST /auth/refresh`
+- [x] `POST /auth/logout`
 - [ ] Email doğrulama akışı (opsiyonel ama önerilir)
 - [ ] Şifre sıfırlama akışı
-- [ ] `GET /users/me` (mevcut kullanıcı profili)
-- [ ] `PATCH /users/me` (profil güncelleme)
-- [ ] `POST /users/me/wallet` (Web3 cüzdan adresini hesaba bağlama — signature doğrulamalı)
-- [ ] Auth middleware (route koruma)
-- [ ] Rate limiting (özellikle login/register)
-- [ ] Bcrypt/argon2 ile şifre hashing
+- [x] `GET /users/me` (mevcut kullanıcı profili)
+- [x] `PATCH /users/me` (profil güncelleme)
+- [x] `POST /users/me/wallet` (Web3 cüzdan adresini hesaba bağlama — signature doğrulamalı)
+- [x] Auth middleware (route koruma)
+- [x] Rate limiting (özellikle login/register)
+- [x] Bcrypt/argon2 ile şifre hashing
 
 ---
 

@@ -29,6 +29,7 @@ coverage/
 
 # Prisma
 database/prisma/*.db
+database/generated/
 
 # Docker
 docker-data/
