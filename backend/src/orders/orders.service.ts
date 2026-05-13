@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
+import { Dev2ApiService } from '../shared/dev2-api.service';
 import { CheckoutDto, UpdateOrderStatusDto } from './dto/orders.dto';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private cartService: CartService,
+    private dev2Api: Dev2ApiService,
   ) {}
 
   async checkout(userId: string, dto: CheckoutDto) {
@@ -21,9 +23,13 @@ export class OrdersService {
     const address = await this.prisma.address.findFirst({ where: { id: dto.addressId, userId } });
     if (!address) throw new NotFoundException('Address not found');
 
-    // Calculate XP discount
-    // DEV2_API_READY: false — mock kullanılıyor
-    const xpDiscount = dto.xpAmount ? dto.xpAmount * 100 : 0; // mock: 1 XP = 1 TL (100 kuruş)
+    // Validate XP discount via Geliştirici 2's service
+    let xpDiscount = 0;
+    if (dto.xpAmount && dto.xpAmount > 0) {
+      const result = await this.dev2Api.applyDiscount(userId, dto.xpAmount);
+      if (!result.valid) throw new BadRequestException('XP discount validation failed');
+      xpDiscount = result.discountKurus;
+    }
 
     return this.prisma.$transaction(async (tx) => {
       // Verify stock and calculate total
@@ -95,8 +101,8 @@ export class OrdersService {
     if (!order) throw new NotFoundException('Order not found');
     return this.prisma.order.update({
       where: { id: orderId },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: dto.status as any,
         paymentStatus: dto.status === 'PAID' ? 'PAID' : undefined,
       },
