@@ -70,16 +70,16 @@ inclusion: always
 
 ## Faz 4 — Backend: Sepet & Sipariş
 
-- [ ] `GET /cart`
-- [ ] `POST /cart/items` (ürün ekle)
-- [ ] `PATCH /cart/items/:id` (adet güncelle)
-- [ ] `DELETE /cart/items/:id`
-- [ ] `POST /orders/checkout` — XP indirimini hesaba katacak (Geliştirici 2'nin verdiği oran ile)
-- [ ] Stok kontrolü ve rezervasyon mantığı
+- [x] `GET /cart`
+- [x] `POST /cart/items` (ürün ekle)
+- [x] `PATCH /cart/items/:id` (adet güncelle)
+- [x] `DELETE /cart/items/:id`
+- [x] `POST /orders/checkout` — XP indirimini hesaba katacak (Geliştirici 2'nin verdiği oran ile)
+- [x] Stok kontrolü ve rezervasyon mantığı
 - [ ] Ödeme entegrasyonu (Stripe/iyzico) — test mode ile başla
-- [ ] `GET /orders` (kullanıcı sipariş geçmişi)
-- [ ] `GET /orders/:id`
-- [ ] Sipariş durum güncellemeleri (pending → paid → shipped → delivered)
+- [x] `GET /orders` (kullanıcı sipariş geçmişi)
+- [x] `GET /orders/:id`
+- [x] Sipariş durum güncellemeleri (pending → paid → shipped → delivered)
 - [ ] Webhook handler (ödeme provider'dan)
 
 ---
