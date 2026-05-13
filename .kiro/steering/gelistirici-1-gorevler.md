@@ -57,14 +57,14 @@ inclusion: always
 
 ## Faz 3 — Backend: Ürün & Katalog API
 
-- [ ] `GET /products` (filter, sort, pagination, search)
-- [ ] `GET /products/:id`
-- [ ] `GET /categories`
-- [ ] `GET /categories/:id/products`
-- [ ] Admin endpoint'leri (`POST/PATCH/DELETE /products`) — basit admin guard
+- [x] `GET /products` (filter, sort, pagination, search)
+- [x] `GET /products/:id`
+- [x] `GET /categories`
+- [x] `GET /categories/:id/products`
+- [x] Admin endpoint'leri (`POST/PATCH/DELETE /products`) — basit admin guard
 - [ ] Ürün görselleri için storage (S3/Cloudinary/local)
-- [ ] Stok düşürme/artırma için transaction-safe servis (sipariş anında race condition önleme)
-- [ ] **Geliştirici 2 için:** stok bilgisini publish eden internal endpoint veya event (algoritma stok verisini buradan çekecek)
+- [x] Stok düşürme/artırma için transaction-safe servis (sipariş anında race condition önleme)
+- [x] **Geliştirici 2 için:** stok bilgisini publish eden internal endpoint veya event (algoritma stok verisini buradan çekecek)
 
 ---
 
