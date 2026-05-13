@@ -86,16 +86,16 @@ inclusion: always
 
 ## Faz 5 — Frontend: Temel Yapı
 
-- [ ] Next.js projesi + routing yapısı
-- [ ] Tailwind + UI library seçimi (shadcn/ui önerilir)
-- [ ] Layout component'leri (Navbar, Footer, Sidebar)
+- [x] Next.js projesi + routing yapısı
+- [x] Tailwind + UI library seçimi (shadcn/ui önerilir)
+- [x] Layout component'leri (Navbar, Footer, Sidebar)
 - [ ] Tema sistemi (dark/light opsiyonel)
-- [ ] API client (axios/fetch wrapper + interceptor — JWT ekleme, refresh logic)
-- [ ] State management (Zustand veya Redux Toolkit)
-- [ ] Form library (React Hook Form + Zod)
-- [ ] Toast/notification sistemi
-- [ ] Loading & error state pattern'leri
-- [ ] 404 / 500 sayfaları
+- [x] API client (axios/fetch wrapper + interceptor — JWT ekleme, refresh logic)
+- [x] State management (Zustand veya Redux Toolkit)
+- [x] Form library (React Hook Form + Zod)
+- [x] Toast/notification sistemi
+- [x] Loading & error state pattern'leri
+- [x] 404 / 500 sayfaları
 
 ---
 
