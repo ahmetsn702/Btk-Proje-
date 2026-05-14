@@ -30,6 +30,9 @@ export function Navbar() {
       >
         Takas
       </Link>
+      <Link href="/market" className="text-sm hover:underline" onClick={() => setMobileOpen(false)}>
+        Market
+      </Link>
     </>
   );
 

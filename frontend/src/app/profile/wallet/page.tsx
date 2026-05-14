@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { useWalletLink } from '@/hooks/use-wallet-link';
+import { useMarketRates } from '@/hooks/use-market-rates';
 import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet, Coins, Zap } from 'lucide-react';
+import { Wallet, Coins, Zap, PieChart } from 'lucide-react';
 
 // DEV2_API_READY: false — mock kullanılıyor
 const DEV2_API_READY = false;
@@ -36,6 +37,7 @@ export default function WalletPage() {
   const { user } = useAuthStore();
   const { linkWallet, linking } = useWalletLink();
   const { isConnected } = useAccount();
+  const { rates } = useMarketRates();
   const [balances, setBalances] = useState<Balances | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -105,7 +107,7 @@ export default function WalletPage() {
             </CardContent>
           </Card>
 
-          {/* CP Bakiyeleri */}
+          {/* CP Bakiyeleri + XP Karşılığı */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -118,15 +120,26 @@ export default function WalletPage() {
                 <p className="text-sm text-muted-foreground">Henüz kategori puanınız yok.</p>
               ) : (
                 <div className="space-y-3">
-                  {balances.cp.map((cp) => (
-                    <div
-                      key={cp.categoryId}
-                      className="flex items-center justify-between rounded-md border p-3"
-                    >
-                      <span className="text-sm font-medium">{cp.categoryName}</span>
-                      <span className="font-semibold">{cp.amount} CP</span>
-                    </div>
-                  ))}
+                  {balances.cp.map((cp) => {
+                    const rate = rates.find((r) => r.categoryId === cp.categoryId);
+                    const xpValue = rate ? cp.amount / rate.cpToXp : 0;
+                    return (
+                      <div
+                        key={cp.categoryId}
+                        className="flex items-center justify-between rounded-md border p-3"
+                      >
+                        <span className="text-sm font-medium">{cp.categoryName}</span>
+                        <div className="text-right">
+                          <span className="font-semibold">{cp.amount} CP</span>
+                          {rate && (
+                            <p className="text-xs text-muted-foreground">
+                              ≈ {xpValue.toFixed(2)} XP
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                   <p className="text-xs text-muted-foreground">
                     CP&apos;leri Takas ekranında XP&apos;ye dönüştürebilirsiniz.
                   </p>
@@ -134,6 +147,38 @@ export default function WalletPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Toplam Portföy Değeri */}
+          {rates.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <PieChart className="h-5 w-5 text-purple-500" />
+                  Toplam Portföy Değeri
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const cpTotal = balances.cp.reduce((sum, cp) => {
+                    const rate = rates.find((r) => r.categoryId === cp.categoryId);
+                    return sum + (rate ? cp.amount / rate.cpToXp : 0);
+                  }, 0);
+                  const total = balances.xp + cpTotal;
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-4xl font-bold">
+                        {total.toFixed(2)} <span className="text-lg text-muted-foreground">XP</span>
+                      </p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>XP Bakiyesi: {balances.xp} XP</p>
+                        <p>CP Karşılığı: {cpTotal.toFixed(2)} XP</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          )}
         </>
       ) : null}
     </div>
