@@ -13,6 +13,9 @@ export interface MarketRate {
   cpToXp: number;
   change24h: number; // yüzde değişim
   lastUpdated: string;
+  surgeActive: boolean;
+  surgeMultiplier: number;
+  surgeEndsAt: string | null;
 }
 
 const MOCK_RATES: MarketRate[] = [
@@ -22,6 +25,9 @@ const MOCK_RATES: MarketRate[] = [
     cpToXp: 10.5,
     change24h: 2.3,
     lastUpdated: new Date().toISOString(),
+    surgeActive: true,
+    surgeMultiplier: 3,
+    surgeEndsAt: new Date(Date.now() + 45 * 60_000).toISOString(),
   },
   {
     categoryId: '2',
@@ -29,6 +35,9 @@ const MOCK_RATES: MarketRate[] = [
     cpToXp: 8.2,
     change24h: -1.5,
     lastUpdated: new Date().toISOString(),
+    surgeActive: false,
+    surgeMultiplier: 1,
+    surgeEndsAt: null,
   },
   {
     categoryId: '3',
@@ -36,6 +45,9 @@ const MOCK_RATES: MarketRate[] = [
     cpToXp: 12.1,
     change24h: 0.8,
     lastUpdated: new Date().toISOString(),
+    surgeActive: true,
+    surgeMultiplier: 2,
+    surgeEndsAt: new Date(Date.now() + 20 * 60_000).toISOString(),
   },
   {
     categoryId: '4',
@@ -43,6 +55,9 @@ const MOCK_RATES: MarketRate[] = [
     cpToXp: 9.7,
     change24h: -3.2,
     lastUpdated: new Date().toISOString(),
+    surgeActive: false,
+    surgeMultiplier: 1,
+    surgeEndsAt: null,
   },
   {
     categoryId: '5',
@@ -50,6 +65,9 @@ const MOCK_RATES: MarketRate[] = [
     cpToXp: 15.0,
     change24h: 5.1,
     lastUpdated: new Date().toISOString(),
+    surgeActive: true,
+    surgeMultiplier: 3,
+    surgeEndsAt: new Date(Date.now() + 90 * 60_000).toISOString(),
   },
   {
     categoryId: '6',
@@ -57,6 +75,9 @@ const MOCK_RATES: MarketRate[] = [
     cpToXp: 7.4,
     change24h: 1.0,
     lastUpdated: new Date().toISOString(),
+    surgeActive: false,
+    surgeMultiplier: 1,
+    surgeEndsAt: null,
   },
 ];
 
@@ -78,6 +99,7 @@ export function useMarketRates() {
             cpToXp: r.cpToXp + (Math.random() - 0.5) * 0.4,
             change24h: r.change24h + (Math.random() - 0.5) * 0.2,
             lastUpdated: new Date().toISOString(),
+            surgeEndsAt: r.surgeEndsAt,
           })),
         );
       }
