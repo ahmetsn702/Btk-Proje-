@@ -49,7 +49,7 @@ async function main() {
         priceFiat: 149900,
         stock: 50,
         categoryId: categories[0].id,
-        images: ['/images/kulaklik.jpg'],
+        images: ['https://picsum.photos/seed/headphones/400/400'],
       },
     }),
     prisma.product.create({
@@ -59,7 +59,7 @@ async function main() {
         priceFiat: 249900,
         stock: 30,
         categoryId: categories[0].id,
-        images: ['/images/klavye.jpg'],
+        images: ['https://picsum.photos/seed/keyboard/400/400'],
       },
     }),
     prisma.product.create({
@@ -69,7 +69,7 @@ async function main() {
         priceFiat: 29900,
         stock: 100,
         categoryId: categories[1].id,
-        images: ['/images/tshirt.jpg'],
+        images: ['https://picsum.photos/seed/shirt/400/400'],
       },
     }),
     prisma.product.create({
@@ -79,7 +79,7 @@ async function main() {
         priceFiat: 89900,
         stock: 40,
         categoryId: categories[3].id,
-        images: ['/images/ayakkabi.jpg'],
+        images: ['https://picsum.photos/seed/shoes/400/400'],
       },
     }),
     prisma.product.create({
@@ -89,7 +89,7 @@ async function main() {
         priceFiat: 44900,
         stock: 60,
         categoryId: categories[2].id,
-        images: ['/images/lamba.jpg'],
+        images: ['https://picsum.photos/seed/lamp/400/400'],
       },
     }),
     prisma.product.create({
@@ -99,7 +99,7 @@ async function main() {
         priceFiat: 19900,
         stock: 25,
         categoryId: categories[4].id,
-        images: ['/images/kitap1.jpg'],
+        images: ['https://picsum.photos/seed/book/400/400'],
       },
     }),
   ]);
