@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -13,15 +16,15 @@ interface Product {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-function resolveImageUrl(url: string | undefined): string | null {
-  if (!url) return null;
+function resolveImageUrl(url: string | undefined): string {
+  if (!url) return '/placeholder.png';
   if (url.startsWith('http')) return url;
   return `${API_URL}${url}`;
 }
 
 export function ProductCard({ product }: { product: Product }) {
   const price = (product.priceFiat / 100).toFixed(2);
-  const imgSrc = resolveImageUrl(product.images[0]);
+  const [imgSrc, setImgSrc] = useState(resolveImageUrl(product.images[0]));
 
   return (
     <Link
@@ -29,19 +32,14 @@ export function ProductCard({ product }: { product: Product }) {
       className="group glass rounded-xl p-4 transition-all hover:glow-blue hover:border-primary/50"
     >
       <div className="relative mb-4 aspect-square overflow-hidden rounded-lg bg-muted/30">
-        {imgSrc ? (
-          <Image
-            src={imgSrc}
-            alt={product.name}
-            fill
-            unoptimized
-            className="object-cover transition-transform group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-            Görsel yok
-          </div>
-        )}
+        <Image
+          src={imgSrc}
+          alt={product.name}
+          fill
+          unoptimized
+          className="object-cover transition-transform group-hover:scale-105"
+          onError={() => setImgSrc('/placeholder.png')}
+        />
         <span className="absolute top-2 right-2 rounded-full bg-secondary/90 px-2 py-0.5 text-[10px] font-medium text-white">
           XP İndirim
         </span>

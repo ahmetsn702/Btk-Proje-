@@ -23,8 +23,8 @@ interface Product {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-function resolveImageUrl(url: string | undefined): string | null {
-  if (!url) return null;
+function resolveImageUrl(url: string | undefined): string {
+  if (!url) return '/placeholder.png';
   if (url.startsWith('http')) return url;
   return `${API_URL}${url}`;
 }
@@ -36,6 +36,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [imgError, setImgError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
 
@@ -87,46 +88,39 @@ export default function ProductDetailPage() {
         {/* Görseller */}
         <div className="space-y-4">
           <div className="aspect-square overflow-hidden rounded-lg border bg-muted">
-            {resolveImageUrl(product.images[selectedImage]) ? (
-              <Image
-                src={resolveImageUrl(product.images[selectedImage])!}
-                alt={product.name}
-                width={600}
-                height={600}
-                unoptimized
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-muted-foreground">
-                Görsel yok
-              </div>
-            )}
+            <Image
+              src={imgError ? '/placeholder.png' : resolveImageUrl(product.images[selectedImage])}
+              alt={product.name}
+              width={600}
+              height={600}
+              unoptimized
+              className="h-full w-full object-cover"
+              onError={() => setImgError(true)}
+            />
           </div>
           {product.images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto">
-              {product.images.map((img, i) => {
-                const src = resolveImageUrl(img);
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedImage(i)}
-                    className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border ${
-                      i === selectedImage ? 'ring-2 ring-primary' : ''
-                    }`}
-                  >
-                    {src && (
-                      <Image
-                        src={src}
-                        alt=""
-                        width={64}
-                        height={64}
-                        unoptimized
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </button>
-                );
-              })}
+              {product.images.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setSelectedImage(i);
+                    setImgError(false);
+                  }}
+                  className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border ${
+                    i === selectedImage ? 'ring-2 ring-primary' : ''
+                  }`}
+                >
+                  <Image
+                    src={resolveImageUrl(img)}
+                    alt=""
+                    width={64}
+                    height={64}
+                    unoptimized
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ))}
             </div>
           )}
         </div>
