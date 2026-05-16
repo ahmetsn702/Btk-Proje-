@@ -5,6 +5,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'path';
 import { AddressesModule } from './addresses/addresses.module';
+import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
     OrdersModule,
     InternalModule,
     AddressesModule,
+    AiModule,
     TasksModule,
     UploadModule,
   ],

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { ProtectedRoute } from '@/components/protected-route';
 import { ImageUpload } from '@/components/image-upload';
+import { AiDescriptionButton } from '@/components/ai-description-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,10 +79,20 @@ export default function AdminProductNewPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Açıklama</Label>
-                <Input
+                <div className="flex items-center justify-between">
+                  <Label>Açıklama</Label>
+                  <AiDescriptionButton
+                    type="product"
+                    name={form.name}
+                    category={categories.find((c) => c.id === form.categoryId)?.name || ''}
+                    onGenerated={(desc) => setForm({ ...form, description: desc })}
+                  />
+                </div>
+                <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={3}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 />
               </div>
 
