@@ -40,3 +40,15 @@ export async function getTransactionsByUser(userAddress: string): Promise<unknow
   }
   return txs;
 }
+
+export async function getPrices(): Promise<Record<string, number>> {
+  const keys = await redis.keys('price:*');
+  const prices: Record<string, number> = {};
+  for (const key of keys) {
+    const raw = await redis.get(key);
+    if (!raw) continue;
+    const categoryId = key.replace('price:', '');
+    prices[categoryId] = parseFloat(raw);
+  }
+  return prices;
+}
