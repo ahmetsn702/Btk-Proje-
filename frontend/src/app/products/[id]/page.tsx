@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
@@ -18,6 +19,14 @@ interface Product {
   stock: number;
   images: string[];
   category: { id: string; name: string; slug: string };
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+function resolveImageUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_URL}${url}`;
 }
 
 export default function ProductDetailPage() {
@@ -78,10 +87,13 @@ export default function ProductDetailPage() {
         {/* Görseller */}
         <div className="space-y-4">
           <div className="aspect-square overflow-hidden rounded-lg border bg-muted">
-            {product.images[selectedImage] ? (
-              <img
-                src={product.images[selectedImage]}
+            {resolveImageUrl(product.images[selectedImage]) ? (
+              <Image
+                src={resolveImageUrl(product.images[selectedImage])!}
                 alt={product.name}
+                width={600}
+                height={600}
+                unoptimized
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -92,17 +104,29 @@ export default function ProductDetailPage() {
           </div>
           {product.images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto">
-              {product.images.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedImage(i)}
-                  className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border ${
-                    i === selectedImage ? 'ring-2 ring-primary' : ''
-                  }`}
-                >
-                  <img src={img} alt="" className="h-full w-full object-cover" />
-                </button>
-              ))}
+              {product.images.map((img, i) => {
+                const src = resolveImageUrl(img);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedImage(i)}
+                    className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border ${
+                      i === selectedImage ? 'ring-2 ring-primary' : ''
+                    }`}
+                  >
+                    {src && (
+                      <Image
+                        src={src}
+                        alt=""
+                        width={64}
+                        height={64}
+                        unoptimized
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

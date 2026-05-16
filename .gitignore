@@ -33,3 +33,8 @@ database/generated/
 
 # Docker
 docker-data/
+
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
