@@ -1,4 +1,13 @@
-import { IsArray, IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryProductsDto {
@@ -57,6 +66,10 @@ export class CreateProductDto {
 
   @IsString()
   categoryId: string;
+
+  @IsNotEmpty()
+  @IsUrl()
+  imageUrl: string;
 
   @IsOptional()
   @IsArray()

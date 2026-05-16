@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+  AlertTriangle,
   ArrowLeftRight,
   TrendingUp,
   Clock,
@@ -92,6 +93,9 @@ function mockHistory(): SwapTransaction[] {
     },
   ];
 }
+
+// DEV2_API_READY: false — mock bakiye
+const MOCK_CP_BALANCE = 200;
 
 const STATUS_CONFIG = {
   pending: { label: 'Beklemede', icon: Clock, color: 'text-yellow-600' },
@@ -384,6 +388,38 @@ export default function ExchangePage() {
                     </div>
                   </div>
                 )}
+
+                {/* Price Impact Uyarısı */}
+                {cpNum > 0 &&
+                  (() => {
+                    const impactPercent = (cpNum / MOCK_CP_BALANCE) * 100;
+                    const isHighImpact = impactPercent > 30;
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Price Impact</span>
+                          <span className={isHighImpact ? 'text-red-600 font-semibold' : ''}>
+                            %{Math.min(impactPercent, 100).toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${isHighImpact ? 'bg-red-500' : 'bg-green-500'}`}
+                            style={{ width: `${Math.min(impactPercent, 100)}%` }}
+                          />
+                        </div>
+                        {isHighImpact && (
+                          <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
+                            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                            <span>
+                              ⚠️ Büyük işlem: Fiyat etkisi yüksek, beklediğinizden az XP
+                              alabilirsiniz
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                 <div className="space-y-2">
                   <Label>Slippage Toleransı</Label>
