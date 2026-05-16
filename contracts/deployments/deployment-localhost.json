@@ -1,0 +1,24 @@
+{
+  "network": "localhost",
+  "chainId": "31337",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "timestamp": "2026-05-16T08:33:56.132Z",
+  "contracts": {
+    "CategoryPoints1155": {
+      "proxy": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+      "implementation": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    },
+    "ExtendedPointToken": {
+      "proxy": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
+      "implementation": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+    },
+    "Exchange": {
+      "proxy": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+      "implementation": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+    },
+    "TaskRewardManager": {
+      "proxy": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
+      "implementation": "0x0165878A594ca255338adfa4d48449f69242Eb8F"
+    }
+  }
+}

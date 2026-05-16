@@ -1,0 +1,157 @@
+---
+# Geliştirici 2 — Genel Kurallar
+
+## Rol
+Senin rolün Geliştirici 2'dir.
+
+## Dokunulmaz Klasörler
+KESİNLİKLE dokunulmaması gereken klasörler: `frontend/`, `backend/`, `database/`
+
+## API Kullanımı
+Geliştirici 1'in sunduğu internal endpoint'leri kullan, bunları sıfırdan yazma.
+
+## Sorumluluk Alanın
+Sorumluluk alanın ve değişiklik yapabileceğin klasörler SADECE şunlardır: `contracts/`, `algorithm/`, `listener/`
+
+---
+
+# Geliştirici 2 Görevleri
+
+## Faz 0 — Hazırlık & Tokenomics Tasarımı
+- Toolchain kurulumu: Hardhat veya Foundry, Solidity, OpenZeppelin
+- Cüzdan + testnet faucet (SADECE Polygon Amoy ağına odaklanılacaktır)
+- Geliştirici 1 ile API kontratlarını netleştirmek
+- Tokenomics dokümanı: CP (nihai indirim puanı) nedir, XP (havuzlar arası arka plan köprü/likidite birimi) nedir, CP↔CP (XP üzerinden) dönüşüm formülü, fee modeli, slippage
+- Kar marjı stratejisi: Ödeme adımında CP indiriminin, ürünün "maksimum feda edilebilir kar marjı (cap)" ile sınırlandırılması kurgusu
+
+## Faz 1 — Smart Contract Mimari Tasarımı
+- CategoryPointToken (ERC-1155 — Tüm kategoriler tek kontratta)
+- ExtendedPointToken (XP — ERC-20, AMM havuzunun baz paritesi)
+- Exchange (CP↔CP takası için arka planda XP üzerinden yönlendirme - routing - yapan AMM havuzu)
+- TaskRewardManager (görev tamamlamada CP mint eden contract)
+- AccessControl / Ownable
+- Upgradeability stratejisi (UUPS proxy veya immutable)
+- Reentrancy ve known attack vector listesi
+
+## Faz 2 — Token Contract'ları
+- ExtendedPointToken.sol (mint/burn yetkisi sadece Exchange'de)
+- CategoryPoints1155.sol (mint → TaskRewardManager, burn → Exchange)
+- OpenZeppelin AccessControl (MINTER_ROLE, BURNER_ROLE)
+- Transfer kısıtlamaları
+- Events: Minted, Burned, Transferred
+- Unit testler (Hardhat/Foundry)
+
+## Faz 3 — Exchange (Takas) Contract'ı
+- swapCPforCP(categoryIn, categoryOut, amountIn, minAmountOut) — Kullanıcı bir CP'yi verir, arka planda XP üzerinden fiyatlanır ve diğer CP'yi alır
+- Initial Liquidity: Kontrat deploy edildiğinde havuzun sıfıra bölünme (division by zero) hatası vermemesi için initial liquidity ekleme fonksiyonu yazılmalı
+- GASLESS UX: Kullanıcıların gas fee ödememesi için EIP-712 ve ERC-2771 (Meta-transactions / Relayer) mimarisi kurgulanacak
+- Slippage protection (minAmountOut)
+- Reentrancy guard, Pausable, Fee mekanizması (% swap fee treasury'ye)
+- getQuote(categoryIn, categoryOut, amountIn) — view function
+- Oracle / fiyat güncelleme entegrasyonu (on-chain deterministik veya off-chain + imza)
+- Events: Swap, PriceUpdated
+- Unit + invariant testler
+
+## Faz 4 — Dinamik Fiyatlandırma Algoritması (Off-chain Servis)
+- Algoritma servisi (Node.js veya Python)
+- Girdiler: CP arzı, talep hacmi, stok durumu (Geliştirici 1'den), pazar hacmi, platform teşvik çarpanı (incentiveFactor)
+- Fiyat formülü v2: price = (xpPool / cpPool) * marketDemandFactor * stockScarcityFactor * incentiveFactor
+- Hesaplama döngüsü (cron / interval)
+- Redis cache (anlık oran)
+- On-chain'e push mekanizması (imzalı transaction veya oracle)
+- Backtest scripti
+- Edge case'ler: sıfır likidite, sıfır stok, manipülasyon savunması (max change per interval)
+
+## Faz 5 — Görev Doğrulama Motoru
+- Görev tipleri: ürün incelemesi, paylaşma, anket, quiz, davet (referral)
+- Doğrulama mantığı: server-side timer, anti-bot (rate limit, captcha, behavior analysis), spam önleme
+- POST /tasks/:id/complete endpoint (Geliştirici 1 proxy'ler)
+- Doğrulama başarılıysa → TaskRewardManager.mintCP (Kategoriye özel CP basılır)
+- Gas optimizasyonu: batch mint (saatte bir toplu mint / Relayer üzerinden)
+- Görev tamamlama logu (DB + on-chain event)
+
+## Faz 6 — Web3 ↔ Web2 Köprüsü (Event Listener & Relayer)
+- Listener servisi (Node.js + Ethers.js veya ethers-rs)
+- Relayer Entegrasyonu: Frontend'den gelen EIP-712 imzalarını alıp sistem cüzdanından gas ödeyerek ağa basma (Meta-transaction execution)
+- Dinlenen event'ler: Swap (Exchange), Minted (CategoryPoints1155), Transfer
+- Block reorganization handling (en az 5-10 confirmation)
+- Failed transaction retry
+- Son işlenen block numarasını persist etme
+- Alternatif: The Graph subgraph
+- WebSocket veya SSE ile Geliştirici 1'in frontend'ine canlı update
+
+## Faz 7 — Backend API (Geliştirici 1'e Veri Sunma)
+- GET /exchange/rate?in=categoryId&out=categoryId — anlık CP→CP oranı (Redis'ten)
+- GET /exchange/quote?in=categoryId&out=categoryId&amount= — slippage dahil tahmini çıktı
+- GET /exchange/history/:userId — kullanıcının takas geçmişi
+- GET /exchange/market-status — XP endeksi üzerinden tüm kategorilerin güncel değer/fiyat durumlarını listeleyen piyasa ekranı verisi
+- GET /users/:userId/balances — tüm CP bakiyeleri
+- GET /users/:userId/transactions — birleşik işlem geçmişi
+- POST /tasks/:id/verify — Geliştirici 1'den proxy edilen görev tamamlama
+- POST /checkout/apply-discount — ödeme akışında kullanılan CP miktarını, *ürünün maksimum kar marjı sınırını (cap)* aşmayacak şekilde hesaplayan ve doğrulayan endpoint
+- OpenAPI/Swagger şeması
+
+## Faz 8 — Smart Contract Güvenlik & Test
+- Hardhat/Foundry unit testleri (%90+ coverage) ve Gasless (EIP-712) testleri
+- Fuzz testleri (Foundry invariant testing)
+- Attack vector kontrolleri: Reentrancy, Integer overflow/underflow, Front-running (MEV), Flash loan, Access control bypass
+- Slither veya Mythril static analysis
+- Gas raporu
+- Testnet'te en az 2 hafta canlı test
+- Mini audit checklist / ekip içi peer review
+
+## Faz 9 — Algoritma & Backend Test
+- Algoritma unit testleri (formülün matematiksel doğruluğu)
+- Integration test: stok değişti → fiyat güncellendi → contract'a yansıdı → frontend gördü
+- Load test (1000+ concurrent quote isteği)
+- Chaos testing: listener servisi crash olunca tutarlılık bozulmuyor mu?
+- DB ↔ on-chain reconciliation scripti (gece çalışıp uyumsuzluk varsa alarm)
+
+## Faz 10 — Deploy
+- Testnet deploy (Sadece Polygon Amoy)
+- Tüm contract'ları deploy et, Geliştirici 1'e ABI ve adres dosyalarını ver, Block explorer'da verify et
+- Mainnet öncesi: testler geçti, admin key'ler multisig'e taşındı (Gnosis Safe), emergency pause test edildi, upgrade path test edildi
+- Mainnet deploy (Polygon veya Arbitrum)
+- Algoritma servisi deploy (Railway / Fly.io / dedicated VPS)
+- Listener servisi deploy (uptime kritik — supervisord/pm2/systemd)
+- Monitoring: contract event alert, anormal fiyat değişimi alert, listener gecikmesi alert, RPC node failure fallback (Alchemy + Infura)
+
+## Faz 11 — Entegrasyon Noktaları (Geliştirici 1 ile Ortak)
+- Cüzdan signature doğrulamasında yardım (personal_sign verify mantığı ve EIP-712 Relayer desteği)
+- Anlık fiyat oranını frontend'e besleyen WebSocket/SSE kanalı
+- Stok endpoint'ine erişim için API key/internal token
+- Görev tamamlama akışında error code sözlüğü
+- Checkout'ta CP indirimini (kar marjı limitiyle) server-side validate eden endpoint kontratı
+- Smart contract event → UI bildirimi pipeline'ı
+
+## Kritik Notlar
+- Tokenomics yanlışsa proje yanlış. Kod yazmaya başlamadan önce formülü kağıt üzerinde simüle et.
+- L2 seçimi gas'ı belirler. Polygon ucuz ama bazen tıkanır, Arbitrum daha stabil. Mainnet Ethereum kesinlikle değil.
+- Off-chain hesaplama + on-chain doğrulama pragmatik yaklaşım. Tamamen off-chain güvensiz, tamamen on-chain gas savurgan.
+- Görev tamamlamada batch mint mantığını başından kur.
+- Reorg ve finality: L2'lerde bile minimum 5-10 block confirmation bekle.
+- Geliştirici 1 stok ve görev şemasının tek doğru kaynağı; sen ondan veri çekiyorsun, ona veri basıyorsun.
+---
+
+# Geliştirici 1 Sorumlulukları (Sadece Referans İçin)
+
+## Sahip Olduğu Her Şey
+- frontend/ — tüm arayüzler (Next.js / React)
+- backend/ — e-ticaret API'leri, auth, sipariş, sepet
+- database/ — PostgreSQL şeması, migration'lar, seed data
+- Kullanıcı kimlik doğrulaması (JWT, session)
+- Ürün kataloğu, stok yönetimi, sipariş akışı
+- Görev panosu UI (frontend)
+- Takas ekranı UI (frontend — backend veriyi Geliştirici 2'den alır)
+- Web3 cüzdan bağlantısı UI (Wagmi/RainbowKit — sadece arayüz)
+- tasks tablosu ve user_task_completions tablosu (DB sahibi)
+
+## Geliştirici 1'in Dışarıya Sunduğu (Senin Kullandığın)
+- GET /internal/stock/:categoryId — stok verisi
+- GET /internal/market-volume/:categoryId — pazar hacmi verisi
+
+## Geliştirici 1'in Sana Sunduğu (Mock Kullanırken)
+- DEV2_API_READY flag'i ile mock data kullan.
+- Her mock'a // DEV2_API_READY yorumu ekle.
+
+---

@@ -1,5 +1,5 @@
 ---
-inclusion: always
+description: Geliştirici 2 görev listesi — Ekonomi Motoru & Blockchain
 ---
 
 # Geliştirici 2 — Ekonomi Motoru & Blockchain (Web3 + Algoritma)
@@ -142,7 +142,7 @@ inclusion: always
 
 ## Faz 8 — Smart Contract Güvenlik & Test
 
-- [ ] **Hardhat/Foundry unit testler** — her contract için %90+ coverage
+- [ ] **Hardhat/Foundry unit testleri** — her contract için %90+ coverage
 - [ ] Fuzz testleri (Foundry'nin invariant testing özelliği)
 - [ ] Bilinen attack vector kontrolleri:
   - [ ] Reentrancy
