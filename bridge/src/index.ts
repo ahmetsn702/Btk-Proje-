@@ -93,7 +93,7 @@ app.get('/ws/rates', async (req, res) => {
   const sendRates = async () => {
     try {
       const prices = await getPrices();
-      const data = `data: ${JSON.stringify({ prices, ts: Date.now() })}\n\n`;
+      const data = `data: ${JSON.stringify({ rates: prices, ts: Date.now() })}\n\n`;
       res.write(data);
     } catch (error) {
       console.error('[SSE] Error sending rates:', error);
@@ -140,6 +140,144 @@ app.get('/exchange/quote', async (req, res) => {
   const amount = BigInt(req.query.amount as string);
   const [amountOut, fee] = await exchange.getQuote(catIn, catOut, amount);
   res.json({ amountIn: amount.toString(), amountOut: amountOut.toString(), fee: fee.toString() });
+});
+
+// ── Exchange: All Rates ───────────────────────────────────────────
+/**
+ * @swagger
+ * /exchange/rates:
+ *   get:
+ *     summary: Get all category rates with surge info
+ *     responses:
+ *       200:
+ *         description: All rates with change24h and surge data
+ */
+app.get('/exchange/rates', async (_req, res) => {
+  try {
+    const prices = await getPrices();
+    res.json(prices);
+  } catch (error) {
+    console.error('[Bridge] Rates error:', error);
+    res.status(500).json({ error: 'Failed to fetch rates' });
+  }
+});
+
+// ── Exchange: Single Rate ────────────────────────────────────────
+/**
+ * @swagger
+ * /exchange/rate/{categoryId}:
+ *   get:
+ *     summary: Get single category rate with surge info
+ *     parameters:
+ *       - in: path
+ *         name: categoryId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Category rate with change24h and surge data
+ *       404:
+ *         description: Category not found
+ */
+app.get('/exchange/rate/:categoryId', async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const prices = await getPrices();
+    const rate = prices[categoryId];
+
+    if (!rate) {
+      return res.status(404).json({ error: 'Category rate not found' });
+    }
+
+    res.json(rate);
+  } catch (error) {
+    console.error('[Bridge] Single rate error:', error);
+    res.status(500).json({ error: 'Failed to fetch rate' });
+  }
+});
+
+// ── Exchange: Chart Data ────────────────────────────────────────
+/**
+ * @swagger
+ * /exchange/chart/{categoryId}:
+ *   get:
+ *     summary: Get historical price chart data for a category
+ *     parameters:
+ *       - in: path
+ *         name: categoryId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [1h, 24h, 7d, 30d]
+ *           default: 24h
+ *     responses:
+ *       200:
+ *         description: Historical price data points
+ */
+app.get('/exchange/chart/:categoryId', async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const period = (req.query.period as string) || '24h';
+
+    // For now, return mock historical data
+    // In production, this should query a time-series database
+    const now = Date.now();
+    const intervals: Record<string, number> = {
+      '1h': 60 * 1000, // 1 minute intervals
+      '24h': 5 * 60 * 1000, // 5 minute intervals
+      '7d': 60 * 60 * 1000, // 1 hour intervals
+      '30d': 4 * 60 * 60 * 1000, // 4 hour intervals
+    };
+
+    const interval = intervals[period] || intervals['24h'];
+    const points = [];
+    let timestamp =
+      now -
+      (period === '1h'
+        ? 60 * 60 * 1000
+        : period === '24h'
+          ? 24 * 60 * 60 * 1000
+          : period === '7d'
+            ? 7 * 24 * 60 * 60 * 1000
+            : 30 * 24 * 60 * 60 * 1000);
+
+    // Get current price
+    const prices = await getPrices();
+    const currentRate = prices[categoryId];
+
+    if (!currentRate) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Generate synthetic historical data based on current rate and change24h
+    while (timestamp <= now) {
+      const randomVariation = (Math.random() - 0.5) * 0.02; // ±1% variation
+      const timeFactor = (now - timestamp) / (24 * 60 * 60 * 1000); // Days ago
+      const trendAdjustment = currentRate.change24h * timeFactor * 0.5;
+      const price = currentRate.rate * (1 + randomVariation + trendAdjustment);
+
+      points.push({
+        timestamp,
+        price: Math.max(0.01, price),
+      });
+
+      timestamp += interval;
+    }
+
+    res.json({
+      categoryId,
+      period,
+      points,
+    });
+  } catch (error) {
+    console.error('[Bridge] Chart data error:', error);
+    res.status(500).json({ error: 'Failed to fetch chart data' });
+  }
 });
 
 // ── Exchange: Market Status ──────────────────────────────────────
@@ -492,6 +630,58 @@ app.post('/checkout/validate-discount', async (req, res) => {
 
 // ── Checkout: Apply Discount ────────────────────────────────────
 app.post('/checkout/apply-discount', async (req, res) => {
+  const { userId, productPrice, maxDiscountPercent = 30 } = req.body;
+  if (!cpToken || !xpToken) return res.status(503).json({ error: 'Tokens not configured' });
+
+  // Read user's CP balances
+  const balances: Record<string, bigint> = {};
+  for (const cat of [1n, 2n, 3n]) {
+    balances[cat.toString()] = await cpToken.balanceOf(userId, cat);
+  }
+
+  // Compute max applicable discount without exceeding margin cap
+  const maxDiscount = (BigInt(productPrice) * BigInt(maxDiscountPercent)) / 100n;
+  const totalCp = Object.values(balances).reduce((a, b) => a + b, 0n);
+
+  // Simple linear discount: 1 CP = 1 unit of discount (up to max)
+  const discount = totalCp < maxDiscount ? totalCp : maxDiscount;
+  const finalPrice = BigInt(productPrice) - discount;
+
+  res.json({
+    userId,
+    productPrice: productPrice.toString(),
+    maxDiscountPercent,
+    discount: discount.toString(),
+    finalPrice: finalPrice.toString(),
+    cpBalances: Object.fromEntries(Object.entries(balances).map(([k, v]) => [k, v.toString()])),
+  });
+});
+
+// ── XP: Apply Discount (Alias for Developer 1) ───────────────────
+/**
+ * @swagger
+ * /xp/apply-discount:
+ *   post:
+ *     summary: Apply CP discount to product price
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               productPrice:
+ *                 type: string
+ *               maxDiscountPercent:
+ *                 type: number
+ *                 default: 30
+ *     responses:
+ *       200:
+ *         description: Discount applied successfully
+ */
+app.post('/xp/apply-discount', async (req, res) => {
   const { userId, productPrice, maxDiscountPercent = 30 } = req.body;
   if (!cpToken || !xpToken) return res.status(503).json({ error: 'Tokens not configured' });
 

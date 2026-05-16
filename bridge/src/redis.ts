@@ -1,6 +1,15 @@
 import Redis from 'ioredis';
 import { REDIS_URL } from './config.js';
 
+export interface PriceData {
+  categoryId: string;
+  rate: number;
+  change24h: number;
+  surgeActive: boolean;
+  surgeMultiplier: number;
+  surgeEndsAt: string | null;
+}
+
 export const redis = new Redis(REDIS_URL, {
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
@@ -41,14 +50,26 @@ export async function getTransactionsByUser(userAddress: string): Promise<unknow
   return txs;
 }
 
-export async function getPrices(): Promise<Record<string, number>> {
+export async function getPrices(): Promise<Record<string, PriceData>> {
   const keys = await redis.keys('price:*');
-  const prices: Record<string, number> = {};
+  const prices: Record<string, PriceData> = {};
   for (const key of keys) {
     const raw = await redis.get(key);
     if (!raw) continue;
     const categoryId = key.replace('price:', '');
-    prices[categoryId] = parseFloat(raw);
+    try {
+      prices[categoryId] = JSON.parse(raw);
+    } catch {
+      // Legacy format: just a number
+      prices[categoryId] = {
+        categoryId,
+        rate: parseFloat(raw),
+        change24h: 0,
+        surgeActive: false,
+        surgeMultiplier: 1.0,
+        surgeEndsAt: null,
+      };
+    }
   }
   return prices;
 }

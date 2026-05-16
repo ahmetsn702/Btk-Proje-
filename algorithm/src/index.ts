@@ -4,6 +4,7 @@ import { computeAllPrices } from './price-engine.js';
 import { startApiServer, updatePrices } from './api.js';
 import { CATEGORY_MAPPINGS, getContractIdByUuid } from './category-mapping.js';
 import { MarketData } from './types.js';
+import { setPrice } from './redis.js';
 
 dotenv.config({ path: '../.env' });
 
@@ -74,6 +75,18 @@ async function tick() {
     const prices = computeAllPrices(marketData);
 
     updatePrices(prices);
+
+    // Store full price data in Redis for Bridge API
+    for (const price of prices) {
+      await setPrice(price.categoryId, {
+        categoryId: price.categoryId,
+        rate: price.rate,
+        change24h: price.change24h,
+        surgeActive: price.surgeActive,
+        surgeMultiplier: price.surgeMultiplier,
+        surgeEndsAt: price.surgeEndsAt,
+      });
+    }
 
     console.log(
       '[ALGO] Prices updated:',
