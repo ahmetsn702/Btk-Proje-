@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
 import { Dev2ApiService } from '../shared/dev2-api.service';
+import { PaymentService } from '../payment/payment.service';
 import { CheckoutDto, UpdateOrderStatusDto } from './dto/orders.dto';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private cartService: CartService,
     private dev2Api: Dev2ApiService,
+    private paymentService: PaymentService,
   ) {}
 
   async checkout(userId: string, dto: CheckoutDto) {
@@ -31,7 +33,7 @@ export class OrdersService {
       xpDiscount = result.discountKurus;
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       // Verify stock and calculate total
       let totalFiat = 0;
       for (const item of cart.items) {
@@ -72,6 +74,26 @@ export class OrdersService {
 
       return order;
     });
+
+    // Charge payment outside transaction (external call)
+    const paymentResult = await this.paymentService.charge(order.totalFiat, {
+      orderId: order.id,
+      userId,
+    });
+
+    if (paymentResult.success) {
+      return this.prisma.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: 'PAID', status: 'PAID' },
+        include: { items: true },
+      });
+    } else {
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: 'FAILED', status: 'CANCELLED' },
+      });
+      throw new BadRequestException('ORDER_PAYMENT_FAILED');
+    }
   }
 
   async findAll(userId: string) {

@@ -11,6 +11,7 @@ import { CartModule } from './cart/cart.module';
 import { CategoriesModule } from './categories/categories.module';
 import { InternalModule } from './internal/internal.module';
 import { OrdersModule } from './orders/orders.module';
+import { PaymentModule } from './payment/payment.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { SharedModule } from './shared/shared.module';
@@ -34,6 +35,7 @@ import { UsersModule } from './users/users.module';
     CategoriesModule,
     CartModule,
     OrdersModule,
+    PaymentModule,
     InternalModule,
     AddressesModule,
     AiModule,
