@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { LinkWalletDto, UpdateUserDto } from './dto/users.dto';
@@ -10,6 +11,7 @@ export class UsersController {
   constructor(private users: UsersService) {}
 
   @Get('me')
+  @SkipThrottle()
   getMe(@GetUser('id') userId: string) {
     return this.users.getMe(userId);
   }
