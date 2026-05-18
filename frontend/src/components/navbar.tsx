@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 import { Button } from '@/components/ui/button';
 import { ConnectWalletButton } from '@/components/connect-wallet-button';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Search } from 'lucide-react';
 
 export function Navbar() {
   const { user, logout } = useAuthStore();
@@ -15,20 +15,31 @@ export function Navbar() {
     <>
       <Link
         href="/products"
-        className="text-sm hover:underline"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setMobileOpen(false)}
       >
         Ürünler
       </Link>
-      <Link href="/tasks" className="text-sm hover:underline" onClick={() => setMobileOpen(false)}>
+      <Link
+        href="/tasks"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setMobileOpen(false)}
+      >
         Görevler
       </Link>
       <Link
         href="/exchange"
-        className="text-sm hover:underline"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setMobileOpen(false)}
       >
         Takas
+      </Link>
+      <Link
+        href="/market"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setMobileOpen(false)}
+      >
+        Market
       </Link>
     </>
   );
@@ -36,12 +47,16 @@ export function Navbar() {
   const authLinks = user ? (
     <>
       <ConnectWalletButton />
-      <Link href="/cart" className="text-sm hover:underline" onClick={() => setMobileOpen(false)}>
+      <Link
+        href="/cart"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setMobileOpen(false)}
+      >
         Sepet
       </Link>
       <Link
         href="/profile"
-        className="text-sm hover:underline"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setMobileOpen(false)}
       >
         Profil
@@ -65,20 +80,32 @@ export function Navbar() {
         </Button>
       </Link>
       <Link href="/register" onClick={() => setMobileOpen(false)}>
-        <Button size="sm">Kayıt Ol</Button>
+        <Button size="sm" className="bg-neon-green text-black hover:bg-neon-green/90 glow-green">
+          Kayıt Ol
+        </Button>
       </Link>
     </>
   );
 
   return (
-    <header className="border-b">
+    <header className="sticky top-0 z-50 glass">
       <nav
         className="container mx-auto flex h-16 items-center justify-between px-4"
         aria-label="Ana navigasyon"
       >
-        <Link href="/" className="text-xl font-bold">
-          BTK Proje
+        <Link href="/" className="font-heading text-xl font-bold text-foreground">
+          BTK<span className="text-primary">Market</span>
         </Link>
+
+        {/* Search */}
+        <div className="hidden md:flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 border border-border">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Ürün ara..."
+            className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none w-48"
+          />
+        </div>
 
         {/* Desktop */}
         <div className="hidden items-center gap-4 md:flex">
@@ -101,10 +128,10 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t px-4 py-4 md:hidden" role="menu">
+        <div className="border-t border-border px-4 py-4 md:hidden glass" role="menu">
           <div className="flex flex-col gap-3">
             {navLinks}
-            <hr className="my-2" />
+            <hr className="my-2 border-border" />
             {authLinks}
           </div>
         </div>

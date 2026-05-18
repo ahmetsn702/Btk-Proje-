@@ -10,8 +10,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeftRight, TrendingUp, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  ArrowRight,
+} from 'lucide-react';
 import type { LineData } from 'lightweight-charts';
+import { useMarketRates } from '@/hooks/use-market-rates';
 
 // DEV2_API_READY: false — mock kullanılıyor
 const DEV2_API_READY = false;
@@ -89,6 +98,92 @@ const STATUS_CONFIG = {
   confirmed: { label: 'Onaylandı', icon: CheckCircle, color: 'text-green-600' },
   failed: { label: 'Başarısız', icon: XCircle, color: 'text-red-600' },
 };
+
+function ComparePreview({ categories }: { categories: Category[] }) {
+  const { rates } = useMarketRates();
+  const [fromCat, setFromCat] = useState('');
+  const [toCat, setToCat] = useState('');
+  const [amount, setAmount] = useState('100');
+
+  const fromRate = rates.find((r) => r.categoryId === fromCat);
+  const toRate = rates.find((r) => r.categoryId === toCat);
+  const cpNum = Number(amount) || 0;
+
+  // CP→XP→CP: fromCP / fromRate = XP, XP * toRate = toCP
+  const xpMid = fromRate ? cpNum / fromRate.cpToXp : 0;
+  const toCpResult = toRate ? xpMid * toRate.cpToXp : 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <ArrowLeftRight className="h-5 w-5" />
+          Karşılaştırmalı Önizleme (CP → XP → CP)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Bir kategorideki CP&apos;nizi başka bir kategorinin CP&apos;sine çevirseniz ne olur?
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1">
+            <Label>Kaynak Kategori</Label>
+            <select
+              value={fromCat}
+              onChange={(e) => setFromCat(e.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Seçin</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label>Miktar (CP)</Label>
+            <Input
+              type="number"
+              min="1"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Hedef Kategori</Label>
+            <select
+              value={toCat}
+              onChange={(e) => setToCat(e.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Seçin</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {fromCat && toCat && cpNum > 0 && fromRate && toRate && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted p-4 text-sm">
+            <span className="font-semibold">
+              {cpNum} {fromRate.categoryName} CP
+            </span>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold text-yellow-600">{xpMid.toFixed(2)} XP</span>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold text-green-600">
+              {toCpResult.toFixed(2)} {toRate.categoryName} CP
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ExchangePage() {
   const { user } = useAuthStore();
@@ -344,6 +439,9 @@ export default function ExchangePage() {
             )}
           </div>
         </div>
+
+        {/* Karşılaştırmalı CP→XP→CP Önizleme */}
+        <ComparePreview categories={categories} />
 
         {/* İşlem Geçmişi */}
         <Card>

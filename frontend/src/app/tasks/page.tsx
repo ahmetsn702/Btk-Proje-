@@ -7,7 +7,8 @@ import { useAuthStore } from '@/store/auth';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Coins, Star, CheckCircle, Loader2 } from 'lucide-react';
+import { Clock, Coins, Star, CheckCircle, Loader2, Flame } from 'lucide-react';
+import { useMarketRates } from '@/hooks/use-market-rates';
 
 interface Task {
   id: string;
@@ -45,12 +46,17 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function TasksPage() {
   const { isAuthenticated } = useAuthStore();
+  const { rates } = useMarketRates();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [completing, setCompleting] = useState<string | null>(null);
   const [tab, setTab] = useState<'available' | 'history'>('available');
+
+  const surgeCategories = new Map(
+    rates.filter((r) => r.surgeActive).map((r) => [r.categoryName, r.surgeMultiplier]),
+  );
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -87,7 +93,13 @@ export default function TasksPage() {
     }
   };
 
-  const availableTasks = tasks.filter((t) => !t.userStatus);
+  const availableTasks = tasks
+    .filter((t) => !t.userStatus)
+    .sort((a, b) => {
+      const aS = surgeCategories.has(a.category.name) ? 1 : 0;
+      const bS = surgeCategories.has(b.category.name) ? 1 : 0;
+      return bS - aS;
+    });
 
   return (
     <ProtectedRoute>
@@ -122,10 +134,11 @@ export default function TasksPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {availableTasks.map((task) => {
                 const diff = DIFFICULTY_LABELS[task.difficulty] || DIFFICULTY_LABELS.EASY;
+                const surgeMult = surgeCategories.get(task.category.name);
                 return (
                   <Card
                     key={task.id}
-                    className="cursor-pointer transition-shadow hover:shadow-md"
+                    className={`cursor-pointer transition-shadow hover:shadow-md ${surgeMult ? 'border-orange-400 ring-1 ring-orange-300' : ''}`}
                     onClick={() => setSelectedTask(task)}
                   >
                     <CardHeader className="pb-2">
@@ -133,11 +146,19 @@ export default function TasksPage() {
                         <span className="text-xs text-muted-foreground">
                           {TYPE_LABELS[task.type] || task.type}
                         </span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${diff.color}`}
-                        >
-                          {diff.label}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {surgeMult && (
+                            <span className="flex items-center gap-0.5 rounded-full bg-gradient-to-r from-red-500 to-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                              <Flame className="h-3 w-3" />
+                              {surgeMult}X
+                            </span>
+                          )}
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${diff.color}`}
+                          >
+                            {diff.label}
+                          </span>
+                        </div>
                       </div>
                       <CardTitle className="text-base">{task.title}</CardTitle>
                     </CardHeader>
