@@ -1,0 +1,156 @@
+{
+  "errorCodes": {
+    "ERR_SLIPPAGE_EXCEEDED": {
+      "code": "ERR_SLIPPAGE_EXCEEDED",
+      "message": "Slippage tolerance exceeded",
+      "description": "The requested discount amount exceeds the allowed slippage range based on current price",
+      "httpStatus": 400
+    },
+    "ERR_MARGIN_CAP_EXCEEDED": {
+      "code": "ERR_MARGIN_CAP_EXCEEDED",
+      "message": "Margin cap exceeded",
+      "description": "The requested discount amount exceeds the maximum allowed margin cap percentage",
+      "httpStatus": 400
+    },
+    "ERR_TASK_ALREADY_DONE": {
+      "code": "ERR_TASK_ALREADY_DONE",
+      "message": "Task already completed",
+      "description": "The user has already completed this task type and cannot claim rewards again",
+      "httpStatus": 400
+    },
+    "ERR_INSUFFICIENT_BALANCE": {
+      "code": "ERR_INSUFFICIENT_BALANCE",
+      "message": "Insufficient balance",
+      "description": "User does not have enough CP or XP balance for this operation",
+      "httpStatus": 400
+    },
+    "ERR_INVALID_SIGNATURE": {
+      "code": "ERR_INVALID_SIGNATURE",
+      "message": "Invalid signature",
+      "description": "The EIP-712 signature is invalid or does not match the signer",
+      "httpStatus": 400
+    },
+    "ERR_TRANSACTION_EXPIRED": {
+      "code": "ERR_TRANSACTION_EXPIRED",
+      "message": "Transaction expired",
+      "description": "The transaction deadline has passed",
+      "httpStatus": 400
+    },
+    "ERR_CONTRACT_NOT_CONFIGURED": {
+      "code": "ERR_CONTRACT_NOT_CONFIGURED",
+      "message": "Contract not configured",
+      "description": "Required smart contract address is not configured in environment variables",
+      "httpStatus": 503
+    },
+    "ERR_RELAYER_NOT_CONFIGURED": {
+      "code": "ERR_RELAYER_NOT_CONFIGURED",
+      "message": "Relayer not configured",
+      "description": "Relayer wallet is not configured for gasless transactions",
+      "httpStatus": 503
+    },
+    "ERR_MISSING_REQUIRED_FIELDS": {
+      "code": "ERR_MISSING_REQUIRED_FIELDS",
+      "message": "Missing required fields",
+      "description": "One or more required fields are missing in the request body",
+      "httpStatus": 400
+    },
+    "ERR_INVALID_TASK_TYPE": {
+      "code": "ERR_INVALID_TASK_TYPE",
+      "message": "Invalid task type",
+      "description": "Task type must be between 0 and 4 (ProductReview, SocialShare, Survey, Quiz, Referral)",
+      "httpStatus": 400
+    },
+    "ERR_CATEGORY_NOT_FOUND": {
+      "code": "ERR_CATEGORY_NOT_FOUND",
+      "message": "Category not found",
+      "description": "The specified category ID does not exist or is not mapped",
+      "httpStatus": 400
+    },
+    "ERR_PRICE_NOT_AVAILABLE": {
+      "code": "ERR_PRICE_NOT_AVAILABLE",
+      "message": "Price not available",
+      "description": "Current price for the category is not available in Redis",
+      "httpStatus": 400
+    },
+    "ERR_SWAP_FAILED": {
+      "code": "ERR_SWAP_FAILED",
+      "message": "Swap failed",
+      "description": "The swap transaction failed on-chain",
+      "httpStatus": 500
+    },
+    "ERR_TASK_VERIFICATION_FAILED": {
+      "code": "ERR_TASK_VERIFICATION_FAILED",
+      "message": "Task verification failed",
+      "description": "The task completion transaction failed on-chain",
+      "httpStatus": 500
+    },
+    "ERR_RPC_FAILURE": {
+      "code": "ERR_RPC_FAILURE",
+      "message": "RPC connection failed",
+      "description": "Failed to connect to blockchain RPC endpoint",
+      "httpStatus": 503
+    },
+    "ERR_REDIS_FAILURE": {
+      "code": "ERR_REDIS_FAILURE",
+      "message": "Redis connection failed",
+      "description": "Failed to connect to Redis cache",
+      "httpStatus": 503
+    },
+    "ERR_BACKEND_UNAVAILABLE": {
+      "code": "ERR_BACKEND_UNAVAILABLE",
+      "message": "Backend service unavailable",
+      "description": "Developer 1's backend service is not available",
+      "httpStatus": 503
+    },
+    "ERR_INTERNAL_SERVER_ERROR": {
+      "code": "ERR_INTERNAL_SERVER_ERROR",
+      "message": "Internal server error",
+      "description": "An unexpected error occurred on the server",
+      "httpStatus": 500
+    }
+  },
+  "taskTypes": {
+    "0": {
+      "name": "ProductReview",
+      "description": "User completed a product review"
+    },
+    "1": {
+      "name": "SocialShare",
+      "description": "User shared product on social media"
+    },
+    "2": {
+      "name": "Survey",
+      "description": "User completed a survey"
+    },
+    "3": {
+      "name": "Quiz",
+      "description": "User completed a quiz"
+    },
+    "4": {
+      "name": "Referral",
+      "description": "User referred a new customer"
+    }
+  },
+  "categorySlugs": {
+    "elektronik": {
+      "contractId": 1,
+      "description": "Electronics category"
+    },
+    "giyim": {
+      "contractId": 2,
+      "description": "Clothing category"
+    },
+    "ev-yasam": {
+      "contractId": 3,
+      "description": "Home & Living category"
+    },
+    "spor": {
+      "contractId": 4,
+      "description": "Sports category"
+    },
+    "kitap": {
+      "contractId": 5,
+      "description": "Books category"
+    }
+  }
+}
