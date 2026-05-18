@@ -40,7 +40,12 @@ async function main() {
 
   console.log(`✓ ${categories.length} kategori oluşturuldu`);
 
-  // Products
+  // Products — sipariş/sepette olmayanları temizle
+  await prisma.product.deleteMany({
+    where: { orderItems: { none: {} }, cartItems: { none: {} } },
+  });
+  console.log('♻️ Mevcut ürünler temizlendi');
+
   const products = await Promise.all([
     prisma.product.create({
       data: {
@@ -106,7 +111,12 @@ async function main() {
 
   console.log(`✓ ${products.length} ürün oluşturuldu`);
 
-  // Tasks
+  // Tasks — tamamlanmamış görevleri temizle
+  await prisma.task.deleteMany({
+    where: { completions: { none: {} } },
+  });
+  console.log('♻️ Mevcut görevler temizlendi');
+
   const tasks = await Promise.all([
     prisma.task.create({
       data: {
