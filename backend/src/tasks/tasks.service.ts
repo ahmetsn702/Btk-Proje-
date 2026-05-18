@@ -5,6 +5,8 @@ const DEV2_API_URL = process.env.DEV2_API_URL || 'http://localhost:3002';
 // DEV2_API_READY: false — mock kullanılıyor
 const DEV2_API_READY = process.env.DEV2_API_READY === 'true';
 
+const MIN_TIME_FACTOR = 0.3; // tahmini sürenin %30'u
+
 @Injectable()
 export class TasksService {
   constructor(private prisma: PrismaService) {}
@@ -44,6 +46,30 @@ export class TasksService {
     });
   }
 
+  async start(userId: string, taskId: string) {
+    const task = await this.prisma.task.findUnique({ where: { id: taskId } });
+    if (!task || !task.isActive) throw new NotFoundException('Task not found');
+
+    const existing = await this.prisma.userTaskCompletion.findUnique({
+      where: { userId_taskId: { userId, taskId } },
+    });
+
+    if (existing?.status === 'VERIFIED') {
+      throw new BadRequestException('Bu görevi zaten tamamladınız');
+    }
+
+    // Already started (PENDING) — return existing
+    if (existing?.status === 'PENDING') {
+      return { started: true, startedAt: existing.createdAt };
+    }
+
+    const completion = await this.prisma.userTaskCompletion.create({
+      data: { userId, taskId, status: 'PENDING' },
+    });
+
+    return { started: true, startedAt: completion.createdAt };
+  }
+
   async complete(userId: string, taskId: string) {
     const task = await this.prisma.task.findUnique({ where: { id: taskId } });
     if (!task || !task.isActive) throw new NotFoundException('Task not found');
@@ -51,7 +77,31 @@ export class TasksService {
     const existing = await this.prisma.userTaskCompletion.findUnique({
       where: { userId_taskId: { userId, taskId } },
     });
-    if (existing) throw new BadRequestException('Task already completed');
+
+    // Already completed
+    if (existing?.status === 'VERIFIED') {
+      console.warn(
+        `[BOT-GUARD] Suspicious activity: userId=${userId}, taskId=${taskId}, reason=already_completed_retry`,
+      );
+      throw new BadRequestException('Bu görevi zaten tamamladınız');
+    }
+
+    // Must start first
+    if (!existing || existing.status !== 'PENDING') {
+      throw new BadRequestException('Görev başlatılmamış');
+    }
+
+    // Minimum time check
+    if (task.durationMin) {
+      const elapsedSec = (Date.now() - existing.createdAt.getTime()) / 1000;
+      const minSec = task.durationMin * 60 * MIN_TIME_FACTOR;
+      if (elapsedSec < minSec) {
+        console.warn(
+          `[BOT-GUARD] Suspicious activity: userId=${userId}, taskId=${taskId}, reason=too_fast (${elapsedSec.toFixed(1)}s < ${minSec}s)`,
+        );
+        throw new BadRequestException('Görev çok hızlı tamamlandı');
+      }
+    }
 
     // Forward to Geliştirici 2's verification service
     if (DEV2_API_READY) {
@@ -67,11 +117,10 @@ export class TasksService {
       }
     }
 
-    // Create completion record
-    const completion = await this.prisma.userTaskCompletion.create({
+    // Update completion record
+    const completion = await this.prisma.userTaskCompletion.update({
+      where: { userId_taskId: { userId, taskId } },
       data: {
-        userId,
-        taskId,
         status: DEV2_API_READY ? 'PENDING' : 'VERIFIED',
         completedAt: DEV2_API_READY ? undefined : new Date(),
       },
