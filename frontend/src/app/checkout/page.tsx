@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+import { useBalances } from '@/hooks/use-balances';
+
 interface Address {
   id: string;
   title: string;
@@ -39,8 +41,11 @@ function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const xpAmount = Number(searchParams.get('xp')) || 0;
+  const cpAmount = Number(searchParams.get('cp')) || 0;
+  const cpCategoryId = searchParams.get('categoryId') || '';
 
   const { items, total, fetchCart } = useCartStore();
+  const { balances } = useBalances();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<string>('');
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -78,8 +83,17 @@ function CheckoutContent() {
     }
   };
 
+  // Calculate CP discount in kurus
+  let cpDiscountKurus = 0;
+  if (cpAmount > 0 && cpCategoryId) {
+    const cb = balances?.categoryBalances?.find((b) => b.categoryId === cpCategoryId);
+    if (cb) {
+      cpDiscountKurus = Math.round(cpAmount * cb.cpToTlRate * cb.bonusMultiplier * 100);
+    }
+  }
+
   const xpDiscountKurus = xpAmount * 100;
-  const finalTotal = Math.max(0, total - xpDiscountKurus);
+  const finalTotal = Math.max(0, total - xpDiscountKurus - cpDiscountKurus);
 
   const handleCheckout = async () => {
     if (!selectedAddress) {
@@ -91,6 +105,8 @@ function CheckoutContent() {
       const { data: order } = await api.post('/orders/checkout', {
         addressId: selectedAddress,
         xpAmount: xpAmount > 0 ? xpAmount : undefined,
+        useCpAmount: cpAmount > 0 ? cpAmount : undefined,
+        categoryId: cpCategoryId || undefined,
       });
       router.push(`/orders/success/${order.id}`);
     } catch (err: unknown) {
@@ -292,6 +308,12 @@ function CheckoutContent() {
                   <div className="flex justify-between text-green-600">
                     <span>XP İndirim ({xpAmount} XP)</span>
                     <span>-{(xpDiscountKurus / 100).toFixed(2)} ₺</span>
+                  </div>
+                )}
+                {cpAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>CP İndirimi ({cpAmount} CP)</span>
+                    <span>-{(cpDiscountKurus / 100).toFixed(2)} ₺</span>
                   </div>
                 )}
               </div>

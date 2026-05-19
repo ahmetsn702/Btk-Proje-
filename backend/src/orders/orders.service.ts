@@ -31,6 +31,65 @@ export class OrdersService {
       xpDiscount = result.discountKurus;
     }
 
+    // Process category-specific CP discount if requested
+    let cpDiscountKurus = 0;
+    let cpToUse = 0;
+
+    if (dto.useCpAmount && dto.useCpAmount > 0) {
+      if (!dto.categoryId) {
+        throw new BadRequestException('categoryId is required when useCpAmount is provided');
+      }
+
+      // 1. Fetch category properties
+      const category = await this.prisma.category.findUnique({
+        where: { id: dto.categoryId },
+      });
+      if (!category) throw new NotFoundException('Category not found');
+
+      // 2. Find product in cart belonging to category and cap by maxCpDiscount
+      const categoryProduct = cart.items.find((item) => item.product.categoryId === dto.categoryId);
+      if (!categoryProduct) {
+        throw new BadRequestException('No products in cart matching the specified category');
+      }
+
+      const maxDiscountLimit = categoryProduct.product.maxCpDiscount;
+      cpToUse = dto.useCpAmount;
+      if (cpToUse > maxDiscountLimit) {
+        cpToUse = maxDiscountLimit;
+      }
+
+      if (cpToUse > 0) {
+        // 3. Verify user has enough CP in that category
+        const earnedResult = await this.prisma.pointTransaction.aggregate({
+          _sum: { amount: true },
+          where: {
+            userId,
+            categoryId: dto.categoryId,
+            type: 'CP_EARN',
+          },
+        });
+        const spentResult = await this.prisma.pointTransaction.aggregate({
+          _sum: { amount: true },
+          where: {
+            userId,
+            categoryId: dto.categoryId,
+            type: 'CP_SPEND',
+          },
+        });
+
+        const userCpBalance = (earnedResult._sum.amount ?? 0) - (spentResult._sum.amount ?? 0);
+        if (userCpBalance < cpToUse) {
+          throw new BadRequestException(
+            `Insufficient CP balance in category. Required: ${cpToUse}, Available: ${userCpBalance}`,
+          );
+        }
+
+        // 4. Calculate discount: useCpAmount * cp_to_tl_rate * bonus_multiplier (convert TL to Kurus)
+        const discountTL = cpToUse * category.cpToTlRate * category.bonusMultiplier;
+        cpDiscountKurus = Math.round(discountTL * 100);
+      }
+    }
+
     return this.prisma.$transaction(async (tx) => {
       // Verify stock and calculate total
       let totalFiat = 0;
@@ -47,7 +106,8 @@ export class OrdersService {
         });
       }
 
-      const finalTotal = Math.max(0, totalFiat - xpDiscount);
+      const totalDiscount = xpDiscount + cpDiscountKurus;
+      const finalTotal = Math.max(0, totalFiat - totalDiscount);
 
       // Create order
       const order = await tx.order.create({
@@ -55,7 +115,7 @@ export class OrdersService {
           userId,
           addressId: dto.addressId,
           totalFiat: finalTotal,
-          xpDiscount,
+          xpDiscount: totalDiscount,
           items: {
             create: cart.items.map((item) => ({
               productId: item.productId,
@@ -66,6 +126,18 @@ export class OrdersService {
         },
         include: { items: true },
       });
+
+      // Write CP_SPEND transaction record if CP discount was applied
+      if (cpToUse > 0) {
+        await tx.pointTransaction.create({
+          data: {
+            userId,
+            categoryId: dto.categoryId,
+            type: 'CP_SPEND',
+            amount: cpToUse,
+          },
+        });
+      }
 
       // Clear cart
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });

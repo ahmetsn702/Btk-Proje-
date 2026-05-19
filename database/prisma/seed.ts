@@ -8,163 +8,291 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // Categories
-  const categories = await Promise.all([
-    prisma.category.upsert({
-      where: { slug: 'elektronik' },
-      update: {},
-      create: {
-        name: 'Elektronik',
-        slug: 'elektronik',
-        description: 'Telefon, bilgisayar, aksesuar',
-      },
-    }),
-    prisma.category.upsert({
-      where: { slug: 'giyim' },
-      update: {},
-      create: { name: 'Giyim', slug: 'giyim', description: 'Kadın, erkek, çocuk giyim' },
-    }),
-    prisma.category.upsert({
-      where: { slug: 'ev-yasam' },
-      update: {},
-      create: { name: 'Ev & Yaşam', slug: 'ev-yasam', description: 'Mobilya, dekorasyon, mutfak' },
-    }),
-    prisma.category.upsert({
-      where: { slug: 'spor' },
-      update: {},
-      create: { name: 'Spor', slug: 'spor', description: 'Spor ekipmanları ve giyim' },
-    }),
-    prisma.category.upsert({
-      where: { slug: 'kitap' },
-      update: {},
-      create: { name: 'Kitap', slug: 'kitap', description: 'Roman, akademik, hobi' },
-    }),
-  ]);
+  const userId = 'cmpce6e1k0000s0h5i4ab396k';
+  const testUserId = 'test_user_001';
 
-  console.log(`✓ ${categories.length} kategori oluşturuldu`);
+  // 1. Categories
+  const catElektronik = await prisma.category.upsert({
+    where: { slug: 'elektronik' },
+    update: {
+      cpToTlRate: 15.0,
+      bonusThreshold: 1000,
+    },
+    create: {
+      id: 'cat_elektronik_001',
+      name: 'Elektronik',
+      slug: 'elektronik',
+      description: 'Telefon, bilgisayar, aksesuar',
+      cpToTlRate: 15.0,
+      bonusThreshold: 1000,
+    },
+  });
 
-  // Products
-  const products = await Promise.all([
-    prisma.product.create({
-      data: {
-        name: 'Kablosuz Kulaklık',
-        description: 'Bluetooth 5.3, ANC',
-        priceFiat: 149900,
-        stock: 50,
-        categoryId: categories[0].id,
-        images: ['https://picsum.photos/seed/headphones/400/400'],
-      },
-    }),
-    prisma.product.create({
-      data: {
-        name: 'Mekanik Klavye',
-        description: 'RGB, Cherry MX Blue',
-        priceFiat: 249900,
-        stock: 30,
-        categoryId: categories[0].id,
-        images: ['https://picsum.photos/seed/keyboard/400/400'],
-      },
-    }),
-    prisma.product.create({
-      data: {
-        name: 'Oversize T-Shirt',
-        description: '100% pamuk, unisex',
-        priceFiat: 29900,
-        stock: 100,
-        categoryId: categories[1].id,
-        images: ['https://picsum.photos/seed/shirt/400/400'],
-      },
-    }),
-    prisma.product.create({
-      data: {
-        name: 'Koşu Ayakkabısı',
-        description: 'Hafif, nefes alan taban',
-        priceFiat: 89900,
-        stock: 40,
-        categoryId: categories[3].id,
-        images: ['https://picsum.photos/seed/shoes/400/400'],
-      },
-    }),
-    prisma.product.create({
-      data: {
-        name: 'Masa Lambası',
-        description: 'LED, ayarlanabilir ışık',
-        priceFiat: 44900,
-        stock: 60,
-        categoryId: categories[2].id,
-        images: ['https://picsum.photos/seed/lamp/400/400'],
-      },
-    }),
-    prisma.product.create({
-      data: {
-        name: 'Yazılım Mühendisliği',
-        description: 'Ian Sommerville, 10. baskı',
-        priceFiat: 19900,
-        stock: 25,
-        categoryId: categories[4].id,
-        images: ['https://picsum.photos/seed/book/400/400'],
-      },
-    }),
-  ]);
+  const catGiyim = await prisma.category.upsert({
+    where: { slug: 'giyim' },
+    update: {
+      cpToTlRate: 2.9,
+      bonusThreshold: 1000,
+    },
+    create: {
+      id: 'cat_giyim_001',
+      name: 'Giyim',
+      slug: 'giyim',
+      description: 'Kadın, erkek, çocuk giyim',
+      cpToTlRate: 2.9,
+      bonusThreshold: 1000,
+    },
+  });
 
-  console.log(`✓ ${products.length} ürün oluşturuldu`);
+  await prisma.category.upsert({
+    where: { slug: 'spor' },
+    update: {
+      cpToTlRate: 5.0,
+      bonusThreshold: 1000,
+    },
+    create: {
+      id: 'cat_spor_001',
+      name: 'Spor',
+      slug: 'spor',
+      description: 'Spor ekipmanları ve giyim',
+      cpToTlRate: 5.0,
+      bonusThreshold: 1000,
+    },
+  });
 
-  // Tasks
-  const tasks = await Promise.all([
-    prisma.task.create({
-      data: {
-        title: 'Kulaklık İncelemesini Oku',
-        type: 'REVIEW_READ',
-        difficulty: 'EASY',
-        rewardCp: 10,
-        durationMin: 3,
-        categoryId: categories[0].id,
-      },
-    }),
-    prisma.task.create({
-      data: {
-        title: 'Ürün Paylaş (Sosyal Medya)',
-        type: 'PRODUCT_SHARE',
-        difficulty: 'EASY',
-        rewardCp: 15,
-        durationMin: 2,
-        categoryId: categories[1].id,
-      },
-    }),
-    prisma.task.create({
-      data: {
-        title: 'Alışveriş Anketi',
-        type: 'SURVEY',
-        difficulty: 'MEDIUM',
-        rewardCp: 25,
-        durationMin: 5,
-        categoryId: categories[2].id,
-      },
-    }),
-    prisma.task.create({
-      data: {
-        title: 'Spor Bilgi Quizi',
-        type: 'QUIZ',
-        difficulty: 'HARD',
-        rewardCp: 50,
-        durationMin: 10,
-        categoryId: categories[3].id,
-      },
-    }),
-    prisma.task.create({
-      data: {
-        title: 'Arkadaşını Davet Et',
-        type: 'REFERRAL',
-        difficulty: 'MEDIUM',
-        rewardCp: 30,
-        durationMin: 1,
-        categoryId: categories[4].id,
-      },
-    }),
-  ]);
+  await prisma.category.upsert({
+    where: { slug: 'kitap' },
+    update: {
+      cpToTlRate: 1.5,
+      bonusThreshold: 1000,
+    },
+    create: {
+      id: 'cat_kitap_001',
+      name: 'Kitap',
+      slug: 'kitap',
+      description: 'Roman, akademik, hobi',
+      cpToTlRate: 1.5,
+      bonusThreshold: 1000,
+    },
+  });
 
-  console.log(`✓ ${tasks.length} görev oluşturuldu`);
-  console.log('\n🌱 Seed tamamlandı!');
+  await prisma.category.upsert({
+    where: { slug: 'ev-yasam' },
+    update: {
+      cpToTlRate: 3.5,
+      bonusThreshold: 1000,
+    },
+    create: {
+      id: 'cat_ev_yasam_001',
+      name: 'Ev & Yaşam',
+      slug: 'ev-yasam',
+      description: 'Mobilya, dekorasyon, mutfak',
+      cpToTlRate: 3.5,
+      bonusThreshold: 1000,
+    },
+  });
+  console.log('✓ Categories created/updated');
+
+  // 2. Users
+  await prisma.user.upsert({
+    where: { id: userId },
+    update: {},
+    create: {
+      id: userId,
+      email: 'user@example.com',
+      passwordHash: '$2b$10$EPf9kP5w.MhY16U5A869K.F79qNfM.qgS76tHsp7g9z6t7qHlR7rS',
+      firstName: 'Gerçek',
+      lastName: 'Kullanıcı',
+      role: 'USER',
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { id: testUserId },
+    update: {},
+    create: {
+      id: testUserId,
+      email: 'test_user_001@example.com',
+      passwordHash: '$2b$10$EPf9kP5w.MhY16U5A869K.F79qNfM.qgS76tHsp7g9z6t7qHlR7rS',
+      firstName: 'Test',
+      lastName: 'User 001',
+      role: 'USER',
+    },
+  });
+  console.log('✓ Users created/updated');
+
+  // 3. Products
+  const kulaklikId = 'cmpcdmadg0005p8h5gosghko6';
+  const tshirtId = 'cmpcdmadi0007p8h50yyss7ru';
+
+  await prisma.product.upsert({
+    where: { id: kulaklikId },
+    update: {},
+    create: {
+      id: kulaklikId,
+      name: 'Kablosuz Kulaklık',
+      description: 'Bluetooth 5.3, ANC',
+      priceFiat: 149900,
+      stock: 50,
+      categoryId: catElektronik.id,
+      images: ['https://picsum.photos/seed/headphones/400/400'],
+    },
+  });
+
+  await prisma.product.upsert({
+    where: { id: tshirtId },
+    update: {},
+    create: {
+      id: tshirtId,
+      name: 'Oversize T-Shirt',
+      description: '100% pamuk, unisex',
+      priceFiat: 29900,
+      stock: 100,
+      categoryId: catGiyim.id,
+      images: ['https://picsum.photos/seed/shirt/400/400'],
+    },
+  });
+  console.log('✓ Products created/updated');
+
+  // 4. Tasks
+  const task1Id = 'cmpcdmaeu000bp8h5nqqq2q9j';
+  const task2Id = 'cmpcdmaew000cp8h5k9ahlrjw';
+
+  await prisma.task.upsert({
+    where: { id: task1Id },
+    update: {},
+    create: {
+      id: task1Id,
+      title: 'Kulaklık İncelemesini Oku',
+      type: 'REVIEW_READ',
+      difficulty: 'EASY',
+      rewardCp: 10,
+      durationMin: 3,
+      categoryId: catElektronik.id,
+    },
+  });
+
+  await prisma.task.upsert({
+    where: { id: task2Id },
+    update: {},
+    create: {
+      id: task2Id,
+      title: 'Ürün Paylaş (Sosyal Medya)',
+      type: 'PRODUCT_SHARE',
+      difficulty: 'EASY',
+      rewardCp: 15,
+      durationMin: 2,
+      categoryId: catGiyim.id,
+    },
+  });
+  console.log('✓ Tasks created/updated');
+
+  // 5. Address for cmpce6e1k0000s0h5i4ab396k
+  const address = await prisma.address.upsert({
+    where: { id: 'addr_kandikoy_001' },
+    update: {},
+    create: {
+      id: 'addr_kandikoy_001',
+      title: 'Ev',
+      fullName: 'Ahmet Yılmaz',
+      phone: '05551234567',
+      city: 'İstanbul',
+      district: 'Kadıköy',
+      address: 'Caferağa Mah. Moda Cad. No:12 D:4',
+      zipCode: '34710',
+      isDefault: true,
+      userId: userId,
+    },
+  });
+  console.log('✓ Address created/updated');
+
+  // 6. Order + OrderItems for cmpce6e1k0000s0h5i4ab396k
+  await prisma.order.upsert({
+    where: { id: 'order_test_001' },
+    update: {},
+    create: {
+      id: 'order_test_001',
+      userId: userId,
+      addressId: address.id,
+      status: 'PAID',
+      paymentStatus: 'PAID',
+      totalFiat: 179800, // 149900 + 29900
+      items: {
+        create: [
+          {
+            productId: kulaklikId,
+            quantity: 1,
+            priceFiat: 149900,
+          },
+          {
+            productId: tshirtId,
+            quantity: 1,
+            priceFiat: 29900,
+          },
+        ],
+      },
+    },
+  });
+  console.log('✓ Order and OrderItems created/updated');
+
+  // 7. User task completions for test_user_001
+  await prisma.userTaskCompletion.upsert({
+    where: { userId_taskId: { userId: testUserId, taskId: task1Id } },
+    update: {},
+    create: {
+      userId: testUserId,
+      taskId: task1Id,
+      status: 'VERIFIED',
+      completedAt: new Date(),
+    },
+  });
+
+  await prisma.userTaskCompletion.upsert({
+    where: { userId_taskId: { userId: testUserId, taskId: task2Id } },
+    update: {},
+    create: {
+      userId: testUserId,
+      taskId: task2Id,
+      status: 'VERIFIED',
+      completedAt: new Date(),
+    },
+  });
+  console.log('✓ User task completions created/updated');
+
+  // 8. PointTransactions for cmpce6e1k0000s0h5i4ab396k
+  await prisma.pointTransaction.upsert({
+    where: { id: 'tx_cp_earn_50' },
+    update: {},
+    create: {
+      id: 'tx_cp_earn_50',
+      userId: userId,
+      type: 'CP_EARN',
+      amount: 50,
+    },
+  });
+  await prisma.pointTransaction.upsert({
+    where: { id: 'tx_cp_spend_20' },
+    update: {},
+    create: {
+      id: 'tx_cp_spend_20',
+      userId: userId,
+      type: 'CP_SPEND',
+      amount: 20,
+    },
+  });
+  await prisma.pointTransaction.upsert({
+    where: { id: 'tx_xp_earn_20' },
+    update: {},
+    create: {
+      id: 'tx_xp_earn_20',
+      userId: userId,
+      type: 'XP_EARN',
+      amount: 20,
+    },
+  });
+  console.log('✓ Point transactions created/updated');
+
+  console.log('\n🌱 Custom Seed tamamlandı!');
 }
 
 main()

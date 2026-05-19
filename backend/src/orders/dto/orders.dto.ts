@@ -8,6 +8,15 @@ export class CheckoutDto {
   @IsInt()
   @Min(0)
   xpAmount?: number = 0; // XP to spend as discount
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  useCpAmount?: number;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
 }
 
 export class UpdateOrderStatusDto {

@@ -7,6 +7,8 @@ interface CartProduct {
   priceFiat: number;
   stock: number;
   images: string[];
+  categoryId: string;
+  maxCpDiscount: number;
 }
 
 export interface CartItem {

@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "categories" ADD COLUMN     "bonus_active" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "bonus_multiplier" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+ADD COLUMN     "bonus_threshold" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "cp_to_tl_rate" DOUBLE PRECISION NOT NULL DEFAULT 1.0;

@@ -25,6 +25,7 @@ model User {
   cart            Cart?
   orders          Order[]
   taskCompletions UserTaskCompletion[]
+  pointTransactions PointTransaction[]
 
   @@map("users")
 }
@@ -37,15 +38,20 @@ enum Role {
 // ─── Categories ──────────────────────────────────────────────────────────────
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
-  description String?
-  image       String?
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id              String    @id @default(cuid())
+  name            String    @unique
+  slug            String    @unique
+  description     String?
+  image           String?
+  cpToTlRate      Float     @default(1.0) @map("cp_to_tl_rate")
+  bonusMultiplier Float     @default(1.0) @map("bonus_multiplier")
+  bonusActive     Boolean   @default(false) @map("bonus_active")
+  bonusThreshold  Int       @default(1000) @map("bonus_threshold")
+  createdAt       DateTime  @default(now()) @map("created_at")
 
   products Product[]
   tasks    Task[]
+  pointTransactions PointTransaction[]
 
   @@map("categories")
 }
@@ -53,15 +59,16 @@ model Category {
 // ─── Products ────────────────────────────────────────────────────────────────
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  priceFiat   Int      @map("price_fiat") // kuruş cinsinden (TL * 100)
-  stock       Int      @default(0)
-  images      String[] @default([])
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  priceFiat     Int      @map("price_fiat") // kuruş cinsinden (TL * 100)
+  stock         Int      @default(0)
+  images        String[] @default([])
+  isActive      Boolean  @default(true) @map("is_active")
+  maxCpDiscount Int      @default(0) @map("max_cp_discount")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   categoryId String   @map("category_id")
   category   Category @relation(fields: [categoryId], references: [id])
@@ -232,4 +239,29 @@ enum CompletionStatus {
   PENDING
   VERIFIED
   REJECTED
+}
+
+// ─── Point Transactions ──────────────────────────────────────────────────────
+
+model PointTransaction {
+  id         String      @id @default(cuid())
+  type       PointTxType
+  amount     Int
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  userId     String      @map("user_id")
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String?     @map("category_id")
+  category   Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([categoryId])
+  @@map("point_transactions")
+}
+
+enum PointTxType {
+  CP_EARN
+  CP_SPEND
+  XP_EARN
+  XP_SPEND
 }

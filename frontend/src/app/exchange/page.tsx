@@ -22,9 +22,6 @@ import {
 import type { LineData } from 'lightweight-charts';
 import { useMarketRates } from '@/hooks/use-market-rates';
 
-// DEV2_API_READY: false — mock kullanılıyor
-const DEV2_API_READY = false;
-
 interface Category {
   id: string;
   name: string;
@@ -43,54 +40,6 @@ interface SwapTransaction {
   xpReceived: number;
   status: 'pending' | 'confirmed' | 'failed';
   createdAt: string;
-}
-
-// Mock data generators
-function mockRate(categoryId: string): ExchangeRate {
-  const rates: Record<string, number> = {};
-  const base = (categoryId.charCodeAt(0) % 5) + 8;
-  rates[categoryId] = base + Math.random() * 2;
-  return { cpToXp: rates[categoryId] || 10, lastUpdated: new Date().toISOString() };
-}
-
-function mockChartData(): LineData[] {
-  const now = Math.floor(Date.now() / 1000);
-  const data: LineData[] = [];
-  let price = 10;
-  for (let i = 24; i >= 0; i--) {
-    price += (Math.random() - 0.48) * 0.5;
-    data.push({ time: (now - i * 3600) as unknown as string, value: Math.max(5, price) });
-  }
-  return data;
-}
-
-function mockHistory(): SwapTransaction[] {
-  return [
-    {
-      id: '1',
-      categoryName: 'Elektronik',
-      cpAmount: 50,
-      xpReceived: 5,
-      status: 'confirmed',
-      createdAt: '2026-05-13T10:00:00Z',
-    },
-    {
-      id: '2',
-      categoryName: 'Giyim',
-      cpAmount: 30,
-      xpReceived: 3,
-      status: 'confirmed',
-      createdAt: '2026-05-12T14:30:00Z',
-    },
-    {
-      id: '3',
-      categoryName: 'Spor',
-      cpAmount: 20,
-      xpReceived: 2,
-      status: 'pending',
-      createdAt: '2026-05-11T09:00:00Z',
-    },
-  ];
 }
 
 const STATUS_CONFIG = {
@@ -206,35 +155,39 @@ export default function ExchangePage() {
     });
   }, []);
 
+  // Fetch history
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get('/exchange/my-history');
+      setHistory(res.data);
+    } catch {
+      /* ignore */
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
   // Fetch rate & chart when category changes
   const fetchRateAndChart = useCallback(async () => {
     if (!selectedCategory) return;
-    if (DEV2_API_READY) {
-      // const [rateRes, chartRes] = await Promise.all([
-      //   api.get(`/exchange/rate/${selectedCategory}`),
-      //   api.get(`/exchange/chart/${selectedCategory}?range=24h`),
-      // ]);
-      // setRate(rateRes.data);
-      // setChartData(chartRes.data);
-    } else {
-      setRate(mockRate(selectedCategory));
-      setChartData(mockChartData());
+    try {
+      const [rateRes, chartRes] = await Promise.all([
+        api.get(`/exchange/rate/${selectedCategory}`),
+        api.get(`/exchange/chart/${selectedCategory}?range=24h`),
+      ]);
+      setRate(rateRes.data);
+      setChartData(chartRes.data);
+    } catch {
+      /* ignore */
     }
   }, [selectedCategory]);
 
   useEffect(() => {
     fetchRateAndChart();
   }, [fetchRateAndChart]);
-
-  // Fetch history
-  useEffect(() => {
-    if (!user) return;
-    if (DEV2_API_READY) {
-      // api.get(`/exchange/history/${user.id}`).then(res => setHistory(res.data));
-    } else {
-      setHistory(mockHistory());
-    }
-  }, [user]);
 
   // Calculate XP output
   const cpNum = Number(cpAmount) || 0;
@@ -247,36 +200,22 @@ export default function ExchangePage() {
     setTxStatus('pending');
 
     try {
-      if (DEV2_API_READY) {
-        // const { data } = await api.post('/exchange/swap', {
-        //   categoryId: selectedCategory,
-        //   cpAmount: cpNum,
-        //   minXpOut,
-        // });
-        // setTxStatus(data.status);
-      } else {
-        // Mock: simulate delay
-        await new Promise((r) => setTimeout(r, 2000));
-        setTxStatus('confirmed');
-        toast.success(`🎉 ${cpNum} CP → ${estimatedXp.toFixed(2)} XP takas başarılı!`);
-        // Add to history
-        const catName = categories.find((c) => c.id === selectedCategory)?.name || '';
-        setHistory((prev) => [
-          {
-            id: Date.now().toString(),
-            categoryName: catName,
-            cpAmount: cpNum,
-            xpReceived: Number(estimatedXp.toFixed(2)),
-            status: 'confirmed',
-            createdAt: new Date().toISOString(),
-          },
-          ...prev,
-        ]);
-      }
+      const { data } = await api.post('/exchange/swap', {
+        categoryId: selectedCategory,
+        cpAmount: cpNum,
+        minXpOut,
+      });
+      setTxStatus(data.status || 'confirmed');
+      toast.success(`🎉 Takas işlemi başarıyla gerçekleştirildi!`);
       setCpAmount('');
-    } catch {
+      fetchHistory();
+      fetchRateAndChart();
+    } catch (err: unknown) {
       setTxStatus('failed');
-      toast.error('Takas başarısız oldu');
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Takas başarısız oldu';
+      toast.error(msg);
     } finally {
       setSwapping(false);
     }
@@ -465,7 +404,7 @@ export default function ExchangePage() {
                   </thead>
                   <tbody>
                     {history.map((tx) => {
-                      const cfg = STATUS_CONFIG[tx.status];
+                      const cfg = STATUS_CONFIG[tx.status] || STATUS_CONFIG.pending;
                       const Icon = cfg.icon;
                       return (
                         <tr key={tx.id} className="border-b last:border-0">
@@ -515,7 +454,7 @@ export default function ExchangePage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tahmini Alınacak</span>
-                  <span className="font-medium">{estimatedXp.toFixed(4)} XP</span>
+                  <span className="font-semibold">{estimatedXp.toFixed(4)} XP</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Slippage</span>

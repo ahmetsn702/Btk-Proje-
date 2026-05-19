@@ -189,30 +189,40 @@ export default function TasksPage() {
           <p className="py-12 text-center text-muted-foreground">Henüz tamamlanan görev yok.</p>
         ) : (
           <div className="space-y-3">
-            {completions.map((c) => (
-              <div key={c.id} className="flex items-center gap-4 rounded-md border p-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-50">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+            {completions.map((c) => {
+              const isPending = c.status === 'PENDING';
+              return (
+                <div key={c.id} className="flex items-center gap-4 rounded-md border p-4">
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isPending ? 'bg-yellow-50' : 'bg-green-50'}`}
+                  >
+                    {isPending ? (
+                      <Clock className="h-5 w-5 text-yellow-600" />
+                    ) : (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{c.task.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {c.task.category.name} •{' '}
+                      {new Date(c.completedAt || c.createdAt).toLocaleDateString('tr-TR')}
+                    </p>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-1">
+                    {isPending ? (
+                      <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700 border border-yellow-200">
+                        Doğrulama bekleniyor
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 border border-green-200">
+                        Tamamlandı +{c.task.rewardCp} CP
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium">{c.task.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {c.task.category.name} •{' '}
-                    {new Date(c.completedAt || c.createdAt).toLocaleDateString('tr-TR')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-green-600">+{c.task.rewardCp} CP</p>
-                  <p className="text-xs text-muted-foreground">
-                    {c.status === 'VERIFIED'
-                      ? 'Doğrulandı'
-                      : c.status === 'PENDING'
-                        ? 'Beklemede'
-                        : 'Reddedildi'}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

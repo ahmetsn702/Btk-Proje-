@@ -21,7 +21,15 @@ export class CartService {
         items: {
           include: {
             product: {
-              select: { id: true, name: true, priceFiat: true, stock: true, images: true },
+              select: {
+                id: true,
+                name: true,
+                priceFiat: true,
+                stock: true,
+                images: true,
+                categoryId: true,
+                maxCpDiscount: true,
+              },
             },
           },
         },

@@ -13,11 +13,14 @@ import { ProductsModule } from './products/products.module';
 import { SharedModule } from './shared/shared.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
+import { PointsModule } from './points/points.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
+    ScheduleModule.forRoot(),
     PrismaModule,
     SharedModule,
     AuthModule,
@@ -29,6 +32,7 @@ import { UsersModule } from './users/users.module';
     InternalModule,
     AddressesModule,
     TasksModule,
+    PointsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
