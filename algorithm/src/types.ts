@@ -1,7 +1,7 @@
 export interface MarketData {
   categoryId: number;
-  cpSupply: number; // CP arzı (havuzda kalan)
-  xpPool: number; // XP rezervi
+  cpSupply: bigint; // CP arzı (havuzda kalan)
+  xpPool: bigint; // XP rezervi
   stockLevel: number; // stok durumu (0-1 arası normalize)
   marketVolume: number; // 24h hacim
   demandFactor: number; // talep çarpanı

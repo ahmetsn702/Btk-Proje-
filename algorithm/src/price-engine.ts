@@ -29,8 +29,8 @@ export function computeCategoryPrice(data: MarketData): PriceResult {
   const incentiveFactor = data.demandFactor < 0.9 ? 1.2 : 1.0;
 
   const inputs: PriceFormulaInputs = {
-    xpPool: data.xpPool,
-    cpPool: data.cpSupply,
+    xpPool: Number(data.xpPool),
+    cpPool: Number(data.cpSupply),
     marketDemandFactor,
     stockScarcityFactor,
     incentiveFactor,
