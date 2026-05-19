@@ -80,10 +80,11 @@ describe('TaskRewardManager', () => {
           topics: (event as { topics: readonly unknown[] }).topics as readonly string[],
           data: (event as { data: string }).data,
         });
-        expect(parsed?.args[0]).to.equal(user.address);
-        expect(parsed?.args[2]).to.equal(CATEGORY_GIYIM);
-        expect(parsed?.args[3]).to.equal(100n * 10n ** 18n);
-        expect(parsed?.args[4]).to.equal('review#123');
+        // Event: TaskCompleted(uint256 completionId, TaskType taskType, address user, uint256 categoryId, uint256 amount, uint256 timestamp, string metadata)
+        expect(parsed?.args[2]).to.equal(user.address);
+        expect(parsed?.args[3]).to.equal(CATEGORY_GIYIM);
+        expect(parsed?.args[4]).to.equal(100n * 10n ** 18n);
+        expect(parsed?.args[6]).to.equal('review#123');
       }
     });
   });
