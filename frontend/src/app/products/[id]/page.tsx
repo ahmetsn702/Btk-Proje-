@@ -37,7 +37,7 @@ interface Product {
   priceFiat: number; // kuruş
   stock: number;
   images: string[];
-  category: { id: string; name: string; slug: string };
+  category?: { id: string; name: string; slug: string };
 }
 
 interface MockReview {
@@ -54,6 +54,7 @@ interface MockReview {
  * Sabitler
  * ────────────────────────────────────────────────────────────────────────── */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const XP_TO_KURUS = 40;
 
 // Mock değerlendirmeler — DEV2_API_READY: false (gerçek incelemeler backend'de henüz yok)
 const MOCK_REVIEWS: MockReview[] = [
@@ -159,7 +160,7 @@ function deriveSpecs(p: Product): { k: string; v: string }[] {
   const materials = ['Pamuk', 'Keten', 'Seramik', 'Doğal Ahşap', 'Geri Dönüşüm'];
   return [
     { k: 'Marka', v: 'BTK Studio' },
-    { k: 'Kategori', v: p.category.name },
+    { k: 'Kategori', v: p.category?.name ?? 'Kategorisiz' },
     { k: 'Renk', v: colors[h % colors.length] },
     { k: 'Materyal', v: materials[(h >> 3) % materials.length] },
     { k: 'Stok kodu', v: p.id.slice(0, 8).toUpperCase() },
@@ -351,6 +352,7 @@ function InfoPanel({
   toggleFav: () => void;
 }) {
   const { rating, reviewCount, oldPriceFiat, earnXp } = deriveProductMock(product);
+  const categoryName = product.category?.name ?? 'Kategorisiz';
   const lineTotal = product.priceFiat * quantity;
   const xpDiscountKurus = xpAmount * XP_TO_KURUS;
   const finalKurus = Math.max(0, lineTotal - xpDiscountKurus);
@@ -379,12 +381,16 @@ function InfoPanel({
             /
           </li>
           <li>
-            <Link
-              href={`/products?category=${product.category.id}`}
-              className="hover:text-[#6B6B66]"
-            >
-              {product.category.name}
-            </Link>
+            {product.category?.id ? (
+              <Link
+                href={`/products?category=${product.category.id}`}
+                className="hover:text-[#6B6B66]"
+              >
+                {categoryName}
+              </Link>
+            ) : (
+              <span>{categoryName}</span>
+            )}
           </li>
           <li aria-hidden className="text-[#CFCBC2]">
             /
@@ -398,7 +404,7 @@ function InfoPanel({
       {/* Category pill */}
       <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F7F2EC] px-3 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.04em] text-[#8A6E51]">
         <span className="h-1.5 w-1.5 rounded-full bg-[#C7B299]" aria-hidden />
-        {product.category.name}
+        {categoryName}
       </span>
 
       {/* Title */}
@@ -956,6 +962,10 @@ function ProductDetailContent() {
       .get<Product>(`/products/${id}`)
       .then((res) => {
         if (cancelled) return;
+        if (!res.data?.id) {
+          setProduct(null);
+          return;
+        }
         setProduct(res.data);
         setActiveImage(0);
         setQuantity(1);
@@ -964,7 +974,7 @@ function ProductDetailContent() {
       .catch(() => {
         if (cancelled) return;
         toast.error('Ürün bulunamadı');
-        router.push('/products');
+        setProduct(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -1045,7 +1055,7 @@ function ProductDetailContent() {
   };
 
   /* ───────── Loading ───────── */
-  if (loading || !product) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#FAFAF7] font-sans text-[#2A2A2A] antialiased">
         <main className="mx-auto max-w-[1280px] px-6 pb-20 pt-6 lg:px-8">
@@ -1070,6 +1080,29 @@ function ProductDetailContent() {
               <div className="h-[54px] w-full animate-pulse rounded-[14px] bg-[#ECE8E1]" />
               <div className="h-[50px] w-full animate-pulse rounded-[14px] bg-[#ECE8E1]" />
             </aside>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF7] font-sans text-[#2A2A2A] antialiased">
+        <main className="mx-auto flex min-h-[70vh] max-w-[1280px] items-center justify-center px-6 pb-20 pt-6 lg:px-8">
+          <div className="max-w-md rounded-[18px] border border-[#ECE8E1] bg-white px-6 py-10 text-center shadow-[0_4px_14px_rgba(40,32,26,0.06)]">
+            <ShoppingBag className="mx-auto h-10 w-10 text-[#A8A29A]" aria-hidden />
+            <h1 className="mt-4 text-xl font-semibold text-[#2A2A2A]">Ürün bulunamadı</h1>
+            <p className="mt-2 text-sm leading-6 text-[#7A746B]">
+              Aradığınız ürün kaldırılmış ya da geçici olarak yayından alınmış olabilir.
+            </p>
+            <Link
+              href="/products"
+              className="mt-6 inline-flex items-center gap-2 rounded-[12px] bg-[#2A2A2A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1A1A1A]"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+              Ürünlere dön
+            </Link>
           </div>
         </main>
       </div>

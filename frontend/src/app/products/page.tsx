@@ -879,6 +879,9 @@ function ProductsContent() {
   }, [cartItems]);
 
   const activeCategory = categories.find((c) => c.id === categoryId) ?? null;
+  const uniqueItems = products.filter(
+    (item, index, self) => index === self.findIndex((p) => p.id === item.id),
+  );
 
   /* ─────────── Aksiyonlar ─────────── */
   const handleAddToCart = async (product: Product) => {
@@ -1025,7 +1028,7 @@ function ProductsContent() {
                   <ProductCardSkeleton key={i} />
                 ))}
               </div>
-            ) : products.length === 0 ? (
+            ) : uniqueItems.length === 0 ? (
               <div className="rounded-[14px] border border-dashed border-[#DDD7CC] bg-white px-6 py-16 text-center">
                 <h3 className="m-0 mb-1.5 text-lg font-medium text-[#2A2A2A]">
                   Bu filtrelere uyan ürün yok
@@ -1041,7 +1044,7 @@ function ProductsContent() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {products.map((p) => (
+                {uniqueItems.map((p) => (
                   <ProductCard
                     key={p.id}
                     product={p}
