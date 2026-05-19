@@ -17,7 +17,7 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
 
   return (
     <ProtectedRoute>
-      <div className="grid gap-8 md:grid-cols-[220px_1fr]">
+      <div className="grid min-h-[calc(100vh-4rem)] gap-8 md:grid-cols-[220px_1fr]">
         <nav className="space-y-1">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href;
