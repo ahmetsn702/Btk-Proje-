@@ -31,8 +31,9 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     try {
       await login(data.email, data.password);
+      const user = useAuthStore.getState().user;
       toast.success('Giriş başarılı!');
-      router.push('/');
+      router.push(user?.role === 'SELLER' ? '/seller/dashboard' : '/products');
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
