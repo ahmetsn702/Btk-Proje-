@@ -28,18 +28,11 @@ export function Navbar() {
         Görevler
       </Link>
       <Link
-        href="/exchange"
+        href="/trade"
         className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setMobileOpen(false)}
       >
         Takas
-      </Link>
-      <Link
-        href="/market"
-        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        onClick={() => setMobileOpen(false)}
-      >
-        Market
       </Link>
     </>
   );
