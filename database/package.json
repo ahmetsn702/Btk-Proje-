@@ -6,12 +6,12 @@
     "generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "seed": "ts-node --esm prisma/seed.ts",
+    "seed": "tsx prisma/seed.ts",
     "studio": "prisma studio"
   },
   "type": "module",
   "prisma": {
-    "seed": "ts-node --esm prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
     "@prisma/client": "^7.8.0",
