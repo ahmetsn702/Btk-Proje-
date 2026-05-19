@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BTK · Trade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --base: #FAFAF7;
+    --card: #FFFFFF;
+    --border: #ECE8E1;
+    --border-strong: #DDD7CB;
+    --ink: #2A2A2A;
+    --ink-soft: #6B6B6B;
+    --ink-muted: #9C9A95;
+
+    --lav-primary: #9C8CC2;
+    --lav-hover: #8472B0;
+    --lav-light: #F4F1FB;
+    --lav-highlight: #C5B8E8;
+    --lav-ink: #5C4E7E;
+
+    --pos: #6FA58D;
+    --pos-bg: #EAF3EE;
+    --neg: #D88A8A;
+    --neg-bg: #F7ECEC;
+
+    --surge-1: #E8B86D;
+    --surge-2: #D99B3D;
+
+    --shadow-card: 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-hover: 0 6px 20px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.03);
+    --shadow-pop: 0 16px 40px rgba(40,30,70,0.10), 0 2px 8px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--base); color: var(--ink); font-family: "Plus Jakarta Sans", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-feature-settings: "tnum" 1; }
+  button { font: inherit; cursor: pointer; }
+  input { font: inherit; }
+  ::selection { background: var(--lav-highlight); }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+/* global React, ReactDOM */
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ───────────── Data ───────────── */
+
+// rate = "1 CP of this category = N XP" (XP is the base settlement currency)
+const CATS = [
+  { id: "moda",   name: "Moda & Stil",       sub: "Giyim · Aksesuar",       rate: 1.42, change: +5.8, surge: true,  vol: "142.8K", spark: [12,14,13,16,18,17,19,22,21,24,26,25] },
+  { id: "tech",   name: "Elektronik",        sub: "Cihaz · Aksesuar",       rate: 0.87, change: -2.1, surge: false, vol: "298.4K", spark: [22,21,20,21,19,20,18,17,18,16,17,17] },
+  { id: "ev",     name: "Ev & Yaşam",        sub: "Mobilya · Dekor",        rate: 1.05, change: +0.4, surge: false, vol: "87.2K",  spark: [16,16,17,17,18,17,18,18,19,18,19,19] },
+  { id: "spor",   name: "Spor & Outdoor",    sub: "Ekipman · Giyim",        rate: 1.23, change: +3.2, surge: true,  vol: "64.1K",  spark: [10,11,10,12,13,12,14,15,16,18,17,19] },
+  { id: "oyun",   name: "Oyun & Hobi",       sub: "Konsol · Koleksiyon",    rate: 0.94, change: -1.5, surge: false, vol: "198.7K", spark: [21,20,21,19,18,19,17,18,16,17,15,16] },
+];
+
+const CAT_BY_ID = Object.fromEntries(CATS.map(c => [c.id, c]));
+
+const INITIAL_HISTORY = [
+  { id: 1, ts: "2026-05-19 14:22", type: "Takas", from: "tech",  to: "moda", amount: 240,  status: "Tamamlandı" },
+  { id: 2, ts: "2026-05-19 11:08", type: "Surge", from: "spor",  to: "oyun", amount: 1200, status: "Tamamlandı" },
+  { id: 3, ts: "2026-05-18 22:47", type: "Takas", from: "moda",  to: "ev",   amount: 85,   status: "Tamamlandı" },
+  { id: 4, ts: "2026-05-18 16:30", type: "Takas", from: "oyun",  to: "tech", amount: 540,  status: "Beklemede" },
+  { id: 5, ts: "2026-05-18 09:12", type: "Takas", from: "ev",    to: "spor", amount: 312,  status: "Tamamlandı" },
+  { id: 6, ts: "2026-05-17 19:55", type: "Takas", from: "tech",  to: "oyun", amount: 78,   status: "Başarısız" },
+];
+
+/* ───────────── Helpers ───────────── */
+
+const fmt = (n, d = 2) => n.toLocaleString("tr-TR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtInt = (n) => Math.round(n).toLocaleString("tr-TR");
+
+function calcSwap(amount, sellId, buyId) {
+  if (!amount || sellId === buyId) return 0;
+  const s = CAT_BY_ID[sellId], b = CAT_BY_ID[buyId];
+  const xp = amount * s.rate;
+  return xp / b.rate;
+}
+
+function Sparkline({ data, color, w = 96, h = 28 }) {
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const step = w / (data.length - 1);
+  const pts = data.map((v, i) => [i * step, h - ((v - min) / range) * h]);
+  // smooth path
+  let d = `M ${pts[0][0]},${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i - 1];
+    const [x2, y2] = pts[i];
+    const cx = (x1 + x2) / 2;
+    d += ` Q ${cx},${y1} ${cx},${(y1 + y2) / 2} T ${x2},${y2}`;
+  }
+  const last = pts[pts.length - 1];
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: "block", overflow: "visible" }}>
+      <path d={d} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
+      <circle cx={last[0]} cy={last[1]} r="2.5" fill={color} />
+    </svg>
+  );
+}
+
+/* ───────────── Top bar ───────────── */
+
+function TopBar({ xpBalance }) {
+  return (
+    <header style={tb.bar}>
+      <div style={tb.left}>
+        <div style={tb.logo}>
+          <div style={tb.logoMark}><span style={{ color: "white", fontWeight: 800, fontSize: 13, letterSpacing: 0.5 }}>BTK</span></div>
+          <div style={{ fontWeight: 700, fontSize: 16 }}>Trade</div>
+        </div>
+        <nav style={tb.nav}>
+          {["Pazar", "Takas", "Envanter", "Liderlik"].map((t, i) => (
+            <a key={t} style={{ ...tb.navItem, ...(i === 1 ? tb.navItemActive : {}) }}>{t}</a>
+          ))}
+        </nav>
+      </div>
+      <div style={tb.right}>
+        <div style={tb.balance}>
+          <span style={{ color: "var(--ink-muted)", fontSize: 12, fontWeight: 500 }}>Bakiye</span>
+          <span className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{fmtInt(xpBalance)} <span style={{ color: "var(--lav-primary)" }}>XP</span></span>
+        </div>
+        <div style={tb.avatar}>EÇ</div>
+      </div>
+    </header>
+  );
+}
+
+const tb = {
+  bar: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 32px", borderBottom: "1px solid var(--border)", background: "rgba(250,250,247,0.85)", backdropFilter: "blur(8px)", position: "sticky", top: 0, zIndex: 50 },
+  left: { display: "flex", alignItems: "center", gap: 36 },
+  logo: { display: "flex", alignItems: "center", gap: 10 },
+  logoMark: { width: 36, height: 28, borderRadius: 8, background: "var(--ink)", display: "grid", placeItems: "center" },
+  nav: { display: "flex", gap: 4 },
+  navItem: { padding: "8px 14px", borderRadius: 8, fontSize: 14, fontWeight: 500, color: "var(--ink-soft)", cursor: "pointer", textDecoration: "none" },
+  navItemActive: { background: "var(--lav-light)", color: "var(--lav-ink)", fontWeight: 600 },
+  right: { display: "flex", alignItems: "center", gap: 16 },
+  balance: { display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", border: "1px solid var(--border)", borderRadius: 10, background: "var(--card)" },
+  avatar: { width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, var(--lav-highlight), var(--lav-primary))", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 700, color: "white" },
+};
+
+/* ───────────── Market Card ───────────── */
+
+function MarketCard({ cat, selected, onClick }) {
+  const [hover, setHover] = useState(false);
+  const pos = cat.change >= 0;
+  return (
+    <button
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onClick={onClick}
+      style={{
+        all: "unset",
+        cursor: "pointer",
+        boxSizing: "border-box",
+        background: "var(--card)",
+        border: `1px solid ${selected ? "var(--lav-highlight)" : "var(--border)"}`,
+        outline: selected ? "2px solid var(--lav-light)" : "none",
+        outlineOffset: -1,
+        borderRadius: 12,
+        padding: 18,
+        boxShadow: hover ? "var(--shadow-hover)" : "var(--shadow-card)",
+        transform: hover ? "translateY(-1px)" : "translateY(0)",
+        transition: "transform .18s ease, box-shadow .18s ease, border-color .18s ease",
+        display: "flex",
+        flexDirection: "column",
+        gap: 14,
+        position: "relative",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", letterSpacing: -0.1 }}>{cat.name}</span>
+          <span style={{ fontSize: 11, color: "var(--ink-muted)", fontWeight: 500 }}>{cat.sub}</span>
+        </div>
+        {cat.surge && <SurgeBadge />}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <span className="mono" style={{ fontSize: 22, fontWeight: 600, color: "var(--ink)", letterSpacing: -0.5 }}>{fmt(cat.rate, 2)}</span>
+        <span className="mono" style={{ fontSize: 11, color: "var(--ink-muted)", fontWeight: 500 }}>1 CP = {fmt(cat.rate, 2)} XP</span>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 4,
+          padding: "3px 8px", borderRadius: 999,
+          background: pos ? "var(--pos-bg)" : "var(--neg-bg)",
+          color: pos ? "var(--pos)" : "var(--neg)",
+          fontSize: 11, fontWeight: 600,
+        }} className="mono">
+          {pos ? "▲" : "▼"} {pos ? "+" : ""}{cat.change.toFixed(1)}%
+        </div>
+        <Sparkline data={cat.spark} color={pos ? "#6FA58D" : "#D88A8A"} />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+        <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>24s hacim</span>
+        <span className="mono" style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 500 }}>{cat.vol} CP</span>
+      </div>
+    </button>
+  );
+}
+
+function SurgeBadge() {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      padding: "3px 8px", borderRadius: 999,
+      background: "linear-gradient(135deg, var(--surge-1), var(--surge-2))",
+      color: "white", fontSize: 10, fontWeight: 700, letterSpacing: 0.3,
+      boxShadow: "0 1px 4px rgba(217,155,61,0.4)",
+      whiteSpace: "nowrap",
+    }}>
+      <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M6 1 L8 5 L11 5.5 L8.5 8 L9 11 L6 9.5 L3 11 L3.5 8 L1 5.5 L4 5 Z" fill="white"/></svg>
+      SURGE
+    </span>
+  );
+}
+
+/* ───────────── Dropdown (Steam-inventory style) ───────────── */
+
+function CategoryDropdown({ value, onChange, disabledId, label }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  const cat = CAT_BY_ID[value];
+
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    window.addEventListener("mousedown", h);
+    return () => window.removeEventListener("mousedown", h);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>{label}</div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          all: "unset", cursor: "pointer", width: "100%", boxSizing: "border-box",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "12px 14px",
+          background: "var(--base)",
+          border: `1px solid ${open ? "var(--lav-highlight)" : "var(--border)"}`,
+          borderRadius: 10,
+          transition: "border-color .15s ease",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <CatChip cat={cat} />
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{cat.name}</span>
+            <span className="mono" style={{ fontSize: 11, color: "var(--ink-muted)" }}>1 CP = {fmt(cat.rate, 2)} XP</span>
+          </div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transition: "transform .18s", transform: open ? "rotate(180deg)" : "none" }}>
+          <path d="M3 5 L7 9 L11 5" stroke="var(--ink-soft)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 20,
+          background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12,
+          boxShadow: "var(--shadow-pop)", padding: 6, maxHeight: 320, overflowY: "auto",
+        }}>
+          {CATS.map(c => {
+            const disabled = c.id === disabledId;
+            return (
+              <button
+                key={c.id}
+                disabled={disabled}
+                onClick={() => { onChange(c.id); setOpen(false); }}
+                style={{
+                  all: "unset", cursor: disabled ? "not-allowed" : "pointer", display: "flex",
+                  alignItems: "center", justifyContent: "space-between", gap: 12,
+                  padding: "10px 12px", borderRadius: 8, width: "100%", boxSizing: "border-box",
+                  opacity: disabled ? 0.35 : 1,
+                  background: c.id === value ? "var(--lav-light)" : "transparent",
+                }}
+                onMouseEnter={(e) => { if (!disabled && c.id !== value) e.currentTarget.style.background = "var(--base)"; }}
+                onMouseLeave={(e) => { if (c.id !== value) e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <CatChip cat={c} />
+                  <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</span>
+                    <span style={{ fontSize: 10.5, color: "var(--ink-muted)" }}>{c.sub}</span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {c.surge && <SurgeDot />}
+                  <span className="mono" style={{ fontSize: 12, fontWeight: 600 }}>{fmt(c.rate, 2)}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SurgeDot() {
+  return <span style={{ width: 6, height: 6, borderRadius: "50%", background: "linear-gradient(135deg, var(--surge-1), var(--surge-2))", display: "inline-block" }} />;
+}
+
+const CAT_COLORS = {
+  moda: "#E9C9D8", tech: "#CFD6E8", ev: "#DCE5D2", spor: "#E5D8C2", oyun: "#D8CEE6",
+};
+const CAT_GLYPH = {
+  moda: "M", tech: "E", ev: "Y", spor: "S", oyun: "O",
+};
+
+function CatChip({ cat, size = 32 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 8,
+      background: CAT_COLORS[cat.id], display: "grid", placeItems: "center",
+      color: "var(--ink)", fontWeight: 700, fontSize: size * 0.42, letterSpacing: -0.5,
+      flexShrink: 0,
+    }}>{CAT_GLYPH[cat.id]}</div>
+  );
+}
+
+/* ───────────── Swap Panel ───────────── */
+
+function SwapPanel({ sellId, setSellId, buyId, setBuyId, onSwap, balances }) {
+  const [amount, setAmount] = useState("100");
+  const [pulse, setPulse] = useState(false);
+  const sell = CAT_BY_ID[sellId];
+  const buy = CAT_BY_ID[buyId];
+  const numericAmount = parseFloat(amount) || 0;
+  const output = calcSwap(numericAmount, sellId, buyId);
+  const rate = sell.rate / buy.rate;
+  const maxBalance = balances[sellId] || 0;
+  const insufficient = numericAmount > maxBalance;
+  const sameCat = sellId === buyId;
+  const disabled = !numericAmount || insufficient || sameCat;
+
+  const flip = () => {
+    setSellId(buyId);
+    setBuyId(sellId);
+    setPulse(true);
+    setTimeout(() => setPulse(false), 400);
+  };
+
+  const doSwap = () => {
+    if (disabled) return;
+    onSwap({ from: sellId, to: buyId, amountIn: numericAmount, amountOut: output });
+    setAmount("");
+  };
+
+  return (
+    <aside style={sp.panel}>
+      <div style={sp.head}>
+        <div>
+          <h2 style={sp.title}>Takas</h2>
+          <p style={sp.subtitle}>Kategoriler arası anında dönüşüm</p>
+        </div>
+        <button style={sp.iconBtn} title="Ayarlar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="1.6" stroke="var(--ink-soft)" strokeWidth="1.4"/>
+            <path d="M8 1.5v2M8 12.5v2M14.5 8h-2M3.5 8h-2M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4M12.6 12.6l-1.4-1.4M4.8 4.8L3.4 3.4" stroke="var(--ink-soft)" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, position: "relative" }}>
+        <CategoryDropdown value={sellId} onChange={setSellId} disabledId={buyId} label="Sat" />
+
+        <div style={sp.amountWrap}>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))}
+            placeholder="0"
+            style={{ ...sp.amountInput, color: insufficient ? "var(--neg)" : "var(--ink)" }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <span style={{ fontSize: 11, color: "var(--ink-muted)", fontWeight: 500 }}>
+              Mevcut: <span className="mono" style={{ color: "var(--ink-soft)" }}>{fmtInt(maxBalance)} CP</span>
+            </span>
+            <button onClick={() => setAmount(String(maxBalance))} style={sp.maxBtn}>MAX</button>
+          </div>
+        </div>
+
+        <div style={sp.flipRow}>
+          <button onClick={flip} style={{ ...sp.flipBtn, transform: pulse ? "rotate(180deg)" : "rotate(0deg)" }} title="Yön değiştir">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M4 3v8M4 11l-2-2M4 11l2-2M10 11V3M10 3l-2 2M10 3l2 2" stroke="var(--lav-primary)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <CategoryDropdown value={buyId} onChange={setBuyId} disabledId={sellId} label="Al" />
+
+        <div style={sp.outputBox}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--lav-ink)", textTransform: "uppercase", letterSpacing: 0.6 }}>Tahmini Alım</span>
+            {(buy.surge || sell.surge) && (
+              <span className="mono" style={{ fontSize: 10.5, fontWeight: 600, color: "var(--surge-2)" }}>+5% surge bonus</span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 6 }}>
+            <span className="mono" style={{ fontSize: 28, fontWeight: 700, color: "var(--ink)", letterSpacing: -0.8 }}>
+              {sameCat ? "—" : fmt(output, 2)}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-soft)" }}>{buy.name.split(" ")[0]} CP</span>
+          </div>
+        </div>
+      </div>
+
+      <div style={sp.meta}>
+        <Row label="Oran" value={<><span className="mono">1</span> {sell.name.split(" ")[0]} = <span className="mono">{fmt(rate, 4)}</span> {buy.name.split(" ")[0]}</>} />
+        <Row label="Ağ ücreti" value={<><span className="mono">0.00</span> XP</>} />
+        <Row label="Slipaj toleransı" value={<span className="mono">%0.5</span>} />
+      </div>
+
+      <button
+        onClick={doSwap}
+        disabled={disabled}
+        style={{
+          ...sp.cta,
+          background: disabled ? "var(--border)" : "var(--lav-primary)",
+          color: disabled ? "var(--ink-muted)" : "white",
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
+        onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = "var(--lav-hover)"; }}
+        onMouseLeave={(e) => { if (!disabled) e.currentTarget.style.background = "var(--lav-primary)"; }}
+      >
+        {sameCat ? "Farklı kategori seç" : insufficient ? "Yetersiz bakiye" : !numericAmount ? "Miktar gir" : "Takas Et"}
+      </button>
+    </aside>
+  );
+}
+
+function Row({ label, value }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+      <span style={{ color: "var(--ink-muted)" }}>{label}</span>
+      <span style={{ color: "var(--ink-soft)", fontWeight: 500 }}>{value}</span>
+    </div>
+  );
+}
+
+const sp = {
+  panel: {
+    background: "var(--card)",
+    border: "1px solid var(--border)",
+    borderRadius: 16,
+    padding: 22,
+    boxShadow: "var(--shadow-card)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 18,
+    position: "sticky",
+    top: 84,
+  },
+  head: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
+  title: { margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: -0.3 },
+  subtitle: { margin: "2px 0 0 0", fontSize: 12, color: "var(--ink-muted)" },
+  iconBtn: { all: "unset", cursor: "pointer", padding: 8, borderRadius: 8, background: "var(--base)", border: "1px solid var(--border)" },
+  amountWrap: {
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    padding: "12px 14px", borderRadius: 10, background: "var(--base)", border: "1px solid var(--border)",
+  },
+  amountInput: {
+    all: "unset", width: "100%", fontFamily: "JetBrains Mono, monospace",
+    fontSize: 24, fontWeight: 600, letterSpacing: -0.5,
+  },
+  maxBtn: {
+    all: "unset", cursor: "pointer", fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+    padding: "3px 8px", borderRadius: 6, background: "var(--lav-light)", color: "var(--lav-ink)",
+  },
+  flipRow: { display: "flex", justifyContent: "center", margin: "-6px 0", position: "relative", zIndex: 1 },
+  flipBtn: {
+    all: "unset", cursor: "pointer",
+    width: 36, height: 36, borderRadius: "50%",
+    background: "var(--card)", border: "1px solid var(--border)",
+    display: "grid", placeItems: "center",
+    transition: "transform .35s cubic-bezier(.5,0,.2,1), background .15s ease",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+  },
+  outputBox: {
+    padding: 16, borderRadius: 12,
+    background: "var(--lav-light)",
+    border: "1px solid #E6DEF6",
+  },
+  meta: { display: "flex", flexDirection: "column", gap: 8, padding: "14px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" },
+  cta: {
+    all: "unset", textAlign: "center", padding: "14px 0", borderRadius: 12,
+    fontSize: 14, fontWeight: 700, letterSpacing: 0.2,
+    transition: "background .15s ease",
+    boxShadow: "0 2px 6px rgba(156,140,194,0.25)",
+  },
+};
+
+/* ───────────── History Table ───────────── */
+
+function HistoryTable({ rows, newId }) {
+  const [filter, setFilter] = useState("all");
+  const filtered = filter === "all" ? rows : rows.filter(r => r.status === filter);
+
+  return (
+    <section style={ht.wrap}>
+      <header style={ht.head}>
+        <div>
+          <h3 style={ht.title}>İşlem geçmişi</h3>
+          <p style={ht.subtitle}>Son takas ve surge etkinliklerin</p>
+        </div>
+        <div style={ht.tabs}>
+          {[["all","Tümü"],["Tamamlandı","Tamamlandı"],["Beklemede","Beklemede"],["Başarısız","Başarısız"]].map(([k, l]) => (
+            <button
+              key={k}
+              onClick={() => setFilter(k)}
+              style={{ ...ht.tab, ...(filter === k ? ht.tabActive : {}) }}
+            >{l}</button>
+          ))}
+        </div>
+      </header>
+
+      <div style={ht.tableWrap}>
+        <table style={ht.table}>
+          <thead>
+            <tr>
+              <Th style={{ width: "20%" }}>Tarih</Th>
+              <Th style={{ width: "14%" }}>Tip</Th>
+              <Th style={{ width: "32%" }}>Kategori</Th>
+              <Th style={{ width: "20%", textAlign: "right" }}>Miktar</Th>
+              <Th style={{ width: "14%", textAlign: "right" }}>Durum</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r) => (
+              <tr key={r.id} style={{ background: r.id === newId ? "var(--lav-light)" : "transparent", transition: "background .8s ease" }}>
+                <Td><span className="mono" style={{ color: "var(--ink-soft)", fontSize: 12 }}>{r.ts}</span></Td>
+                <Td>
+                  {r.type === "Surge" ? (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, background: "linear-gradient(135deg, var(--surge-1), var(--surge-2))", color: "white", fontSize: 11, fontWeight: 700 }}>SURGE</span>
+                  ) : (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, background: "var(--lav-light)", color: "var(--lav-ink)", fontSize: 11, fontWeight: 600 }}>Takas</span>
+                  )}
+                </Td>
+                <Td>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <CatChip cat={CAT_BY_ID[r.from]} size={22} />
+                    <span style={{ fontSize: 13, color: "var(--ink-soft)", fontWeight: 500 }}>{CAT_BY_ID[r.from].name.split(" ")[0]}</span>
+                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 5h12m0 0L9 1m4 4L9 9" stroke="var(--ink-muted)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <CatChip cat={CAT_BY_ID[r.to]} size={22} />
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{CAT_BY_ID[r.to].name.split(" ")[0]}</span>
+                  </div>
+                </Td>
+                <Td style={{ textAlign: "right" }}>
+                  <span className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{fmtInt(r.amount)}</span>
+                  <span style={{ fontSize: 11, color: "var(--ink-muted)", marginLeft: 4 }}>CP</span>
+                </Td>
+                <Td style={{ textAlign: "right" }}>
+                  <StatusPill status={r.status} />
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {filtered.length === 0 && (
+          <div style={{ padding: 40, textAlign: "center", color: "var(--ink-muted)", fontSize: 13 }}>
+            Bu filtrede henüz işlem yok.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Th({ children, style }) {
+  return <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 11, fontWeight: 600, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: 0.6, borderBottom: "1px solid var(--border)", ...style }}>{children}</th>;
+}
+function Td({ children, style }) {
+  return <td style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", verticalAlign: "middle", ...style }}>{children}</td>;
+}
+function StatusPill({ status }) {
+  const map = {
+    "Tamamlandı": { bg: "var(--pos-bg)", fg: "var(--pos)", dot: "var(--pos)" },
+    "Beklemede":  { bg: "#FBF3E1", fg: "#B98532", dot: "#D99B3D" },
+    "Başarısız":  { bg: "var(--neg-bg)", fg: "var(--neg)", dot: "var(--neg)" },
+  };
+  const s = map[status];
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999, background: s.bg, color: s.fg, fontSize: 11, fontWeight: 600 }}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.dot }} />
+      {status}
+    </span>
+  );
+}
+
+const ht = {
+  wrap: { background: "var(--card)", border: "1px solid var(--border)", borderRadius: 16, boxShadow: "var(--shadow-card)", overflow: "hidden" },
+  head: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 22px", borderBottom: "1px solid var(--border)" },
+  title: { margin: 0, fontSize: 16, fontWeight: 700, letterSpacing: -0.2 },
+  subtitle: { margin: "2px 0 0 0", fontSize: 12, color: "var(--ink-muted)" },
+  tabs: { display: "flex", gap: 4, background: "var(--base)", padding: 4, borderRadius: 10, border: "1px solid var(--border)" },
+  tab: { all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 500, padding: "6px 12px", borderRadius: 6, color: "var(--ink-soft)" },
+  tabActive: { background: "var(--card)", color: "var(--ink)", fontWeight: 600, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" },
+  tableWrap: { overflowX: "auto" },
+  table: { width: "100%", borderCollapse: "collapse" },
+};
+
+/* ───────────── Toast ───────────── */
+
+function Toast({ msg, onClose }) {
+  useEffect(() => {
+    if (!msg) return;
+    const t = setTimeout(onClose, 3200);
+    return () => clearTimeout(t);
+  }, [msg, onClose]);
+  if (!msg) return null;
+  return (
+    <div style={{
+      position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)",
+      background: "var(--ink)", color: "white", padding: "12px 18px", borderRadius: 12,
+      fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 10,
+      boxShadow: "0 10px 30px rgba(0,0,0,0.18)", zIndex: 100,
+      animation: "toastIn .3s cubic-bezier(.2,.8,.2,1)",
+    }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="7" stroke="var(--lav-highlight)" strokeWidth="1.5"/>
+        <path d="M5 8.5l2 2 4-5" stroke="var(--lav-highlight)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {msg}
+    </div>
+  );
+}
+
+/* ───────────── App ───────────── */
+
+function App() {
+  const [sellId, setSellId] = useState("tech");
+  const [buyId, setBuyId] = useState("moda");
+  const [history, setHistory] = useState(INITIAL_HISTORY);
+  const [newId, setNewId] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  // Mock per-category CP balances
+  const [balances, setBalances] = useState({ moda: 320, tech: 1480, ev: 210, spor: 95, oyun: 740 });
+  const xpBalance = useMemo(() => Object.entries(balances).reduce((a, [k, v]) => a + v * CAT_BY_ID[k].rate, 0), [balances]);
+
+  const handleCardClick = (id) => {
+    if (id === buyId) setBuyId(sellId);
+    setSellId(id);
+  };
+
+  const handleSwap = ({ from, to, amountIn, amountOut }) => {
+    const now = new Date();
+    const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    const id = Date.now();
+    const row = { id, ts, type: (CAT_BY_ID[from].surge || CAT_BY_ID[to].surge) ? "Surge" : "Takas", from, to, amount: Math.round(amountIn), status: "Tamamlandı" };
+    setHistory(h => [row, ...h]);
+    setNewId(id);
+    setTimeout(() => setNewId(null), 1800);
+    setBalances(b => ({ ...b, [from]: Math.max(0, (b[from] || 0) - amountIn), [to]: (b[to] || 0) + amountOut }));
+    setToast(`Takas tamamlandı · ${fmtInt(amountIn)} ${CAT_BY_ID[from].name.split(" ")[0]} → ${fmt(amountOut, 2)} ${CAT_BY_ID[to].name.split(" ")[0]}`);
+  };
+
+  return (
+    <div data-screen-label="01 Trade">
+      <style>{`
+        @keyframes toastIn { from { transform: translate(-50%, 20px); opacity: 0 } to { transform: translate(-50%, 0); opacity: 1 } }
+        @keyframes rowIn { from { background: var(--lav-highlight); } to { background: var(--lav-light); } }
+      `}</style>
+
+      <TopBar xpBalance={xpBalance} />
+
+      <main style={app.main}>
+        {/* Section heading */}
+        <div style={app.sectionHead}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <h1 style={app.h1}>Kategori marketleri</h1>
+              <span style={app.liveDot}>
+                <span style={app.liveDotInner} /> Canlı
+              </span>
+            </div>
+            <p style={app.lead}>Kategoriler arası CP/XP oranları gerçek zamanlı güncellenir. Surge etkin marketler ekstra getiriyle takas edilir.</p>
+          </div>
+          <div style={app.kpi}>
+            <Kpi label="Bugünkü hacim" value="789K" unit="CP" />
+            <Kpi label="Aktif surge" value="2" unit="market" />
+            <Kpi label="Senin getirin" value="+12.4" unit="% / 7g" tone="pos" />
+          </div>
+        </div>
+
+        <div style={app.grid}>
+          {/* Left column */}
+          <div style={app.left}>
+            <div style={app.cardGrid}>
+              {CATS.map(c => (
+                <MarketCard
+                  key={c.id}
+                  cat={c}
+                  selected={c.id === sellId}
+                  onClick={() => handleCardClick(c.id)}
+                />
+              ))}
+            </div>
+
+            <HistoryTable rows={history} newId={newId} />
+          </div>
+
+          {/* Right column */}
+          <div>
+            <SwapPanel
+              sellId={sellId} setSellId={setSellId}
+              buyId={buyId} setBuyId={setBuyId}
+              onSwap={handleSwap}
+              balances={balances}
+            />
+          </div>
+        </div>
+      </main>
+
+      <Toast msg={toast} onClose={() => setToast(null)} />
+    </div>
+  );
+}
+
+function Kpi({ label, value, unit, tone }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 16px", borderLeft: "1px solid var(--border)" }}>
+      <span style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+        <span className="mono" style={{ fontSize: 18, fontWeight: 700, color: tone === "pos" ? "var(--pos)" : "var(--ink)", letterSpacing: -0.3 }}>{value}</span>
+        <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+const app = {
+  main: { maxWidth: 1320, margin: "0 auto", padding: "32px 32px 64px" },
+  sectionHead: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 24, flexWrap: "wrap" },
+  h1: { margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: -0.5 },
+  liveDot: { display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999, background: "var(--pos-bg)", color: "var(--pos)", fontSize: 11, fontWeight: 600 },
+  liveDotInner: { width: 6, height: 6, borderRadius: "50%", background: "var(--pos)", boxShadow: "0 0 0 3px rgba(111,165,141,0.2)" },
+  lead: { margin: "8px 0 0 0", fontSize: 13, color: "var(--ink-soft)", maxWidth: 540 },
+  kpi: { display: "flex", paddingLeft: 16 },
+  grid: { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 380px", gap: 28, alignItems: "start" },
+  left: { display: "flex", flexDirection: "column", gap: 28, minWidth: 0 },
+  cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 },
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+</script>
+</body>
+</html>
