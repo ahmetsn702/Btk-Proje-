@@ -434,11 +434,11 @@ function AddressModal({
             >
               {busy ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Sipariş veriliyor…
+                  <Loader2 className="h-4 w-4 animate-spin" /> Seçiliyor...
                 </>
               ) : (
                 <>
-                  Onayla & Sipariş ver <ChevronRight className="h-4 w-4" />
+                  Adresi Seç <ChevronRight className="h-4 w-4" />
                 </>
               )}
             </button>
@@ -460,6 +460,7 @@ function CartPageInner() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [draftXp, setDraftXp] = useState(0);
   const [appliedXp, setAppliedXp] = useState(0);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [addressOpen, setAddressOpen] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
 
@@ -527,6 +528,11 @@ function CartPageInner() {
     } finally {
       setCheckingOut(false);
     }
+  };
+
+  const handleAddressSelect = (address: Address) => {
+    setSelectedAddress(address);
+    setAddressOpen(false);
   };
 
   /* ─────────── Boş sepet ─────────── */
@@ -789,6 +795,27 @@ function CartPageInner() {
                   hint="Tüm siparişlerde"
                 />
               </div>
+              {selectedAddress && (
+                <div className="mx-5 mb-4 rounded-[10px] border border-[#ECE8E1] bg-[#FAFAF7] px-3 py-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-[#2A2A2A]">
+                        {selectedAddress.title}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-[11.5px] leading-4 text-[#5C5953]">
+                        {selectedAddress.address}, {selectedAddress.district}/{selectedAddress.city}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAddressOpen(true)}
+                      className="shrink-0 text-[11.5px] font-semibold text-[#D16F5A] hover:underline"
+                    >
+                      Değiştir
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="border-t border-[#ECE8E1] px-5 py-4">
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm font-medium text-[#5C5953]">Toplam</span>
@@ -798,7 +825,9 @@ function CartPageInner() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setAddressOpen(true)}
+                  onClick={() =>
+                    selectedAddress ? handleCheckout(selectedAddress) : setAddressOpen(true)
+                  }
                   disabled={items.length === 0 || checkingOut}
                   className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] bg-[#E28D7A] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(226,141,122,0.3)] transition-colors hover:bg-[#D16F5A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E28D7A] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-[#ECE8E1] disabled:text-[#8E8A82] disabled:shadow-none"
                 >
@@ -806,9 +835,13 @@ function CartPageInner() {
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" /> İşleniyor…
                     </>
+                  ) : selectedAddress ? (
+                    <>
+                      Siparişi Tamamla <ChevronRight className="h-4 w-4" />
+                    </>
                   ) : (
                     <>
-                      Siparişi Onayla <ChevronRight className="h-4 w-4" />
+                      Teslimat Adresi Seç <ChevronRight className="h-4 w-4" />
                     </>
                   )}
                 </button>
@@ -843,8 +876,8 @@ function CartPageInner() {
       <AddressModal
         open={addressOpen}
         onClose={() => !checkingOut && setAddressOpen(false)}
-        onSelect={handleCheckout}
-        busy={checkingOut}
+        onSelect={handleAddressSelect}
+        busy={false}
       />
     </div>
   );
