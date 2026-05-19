@@ -331,6 +331,8 @@ function InfoPanel({
   setXpAmount,
   xpBalance,
   maxXpUsable,
+  cpUsageLimit,
+  maxXpFromLimit,
   onAddToCart,
   onBuyNow,
   busy,
@@ -344,6 +346,8 @@ function InfoPanel({
   setXpAmount: (n: number) => void;
   xpBalance: number;
   maxXpUsable: number;
+  cpUsageLimit: number;
+  maxXpFromLimit: number;
   onAddToCart: () => void;
   onBuyNow: () => void;
   busy: boolean;
@@ -511,6 +515,28 @@ function InfoPanel({
             XP
           </span>
         </header>
+
+        {/* CP kullanım sınırı bilgi satırı (emerald rozet)
+            DEV2_API_READY: false — gerçek limit Dev2 API'sinden gelecek */}
+        <div className="relative mb-3.5 flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF3EE] px-2.5 py-1 text-[11.5px] font-semibold text-[#3F7561]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#6FA58D]" aria-hidden />
+            Maksimum CP kullanım oranınız: %{cpUsageLimit}
+          </span>
+          <Link
+            href="/profile"
+            className="text-[11.5px] font-medium text-[#5A4C7E] underline-offset-[3px] hover:text-[#3F345E] hover:underline"
+          >
+            Sınırı değiştir
+          </Link>
+        </div>
+        <p className="relative mb-3 text-[12px] text-[#6A5E8C]">
+          Bu ürün için en fazla{' '}
+          <b className="font-semibold tabular-nums text-[#3F345E]">
+            {maxXpFromLimit.toLocaleString('tr-TR')}
+          </b>{' '}
+          CP kullanabilirsiniz.
+        </p>
 
         <div className="relative flex items-center gap-4">
           <div className="flex-1">
@@ -913,6 +939,18 @@ function ProductDetailContent() {
   const [adding, setAdding] = useState(false);
   const [isFav, setIsFav] = useState(false);
 
+  // CP kullanım sınırı (kullanıcı /profile'da kaydeder, default %7)
+  // DEV2_API_READY: false — gerçek limit Dev2 API'sinden gelecek
+  const [cpUsageLimit, setCpUsageLimit] = useState<number>(7);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('cp_usage_limit');
+    const parsed = stored ? parseInt(stored, 10) : NaN;
+    if (!Number.isNaN(parsed) && parsed >= 7 && parsed <= 15) {
+      setCpUsageLimit(parsed);
+    }
+  }, []);
+
   // Ürünü çek
   useEffect(() => {
     if (!id) return;
@@ -954,10 +992,16 @@ function ProductDetailContent() {
   // XP — DEV2_API_READY: false — useBalances mock'undan
   const xpBalance = balances?.xp ?? 0;
   const lineTotal = product ? product.priceFiat * quantity : 0;
+  // CP kullanım sınırı: ürün toplamının %X'i kadar XP kullanılabilir
+  // DEV2_API_READY: false — gerçek limit Dev2 API'sinden gelecek
+  const maxXpFromLimit = useMemo(() => {
+    if (lineTotal <= 0) return 0;
+    return Math.floor((lineTotal * cpUsageLimit) / 100 / XP_TO_KURUS);
+  }, [lineTotal, cpUsageLimit]);
   const maxXpUsable = useMemo(() => {
     if (lineTotal <= 0) return 0;
-    return Math.min(xpBalance, Math.floor(lineTotal / XP_TO_KURUS));
-  }, [xpBalance, lineTotal]);
+    return Math.min(xpBalance, Math.floor(lineTotal / XP_TO_KURUS), maxXpFromLimit);
+  }, [xpBalance, lineTotal, maxXpFromLimit]);
 
   // Sepet/adet değişince XP miktarını sınır içinde tut
   useEffect(() => {
@@ -1055,6 +1099,8 @@ function ProductDetailContent() {
             setXpAmount={setXpAmount}
             xpBalance={xpBalance}
             maxXpUsable={maxXpUsable}
+            cpUsageLimit={cpUsageLimit}
+            maxXpFromLimit={maxXpFromLimit}
             onAddToCart={handleAddToCart}
             onBuyNow={handleBuyNow}
             busy={adding}
