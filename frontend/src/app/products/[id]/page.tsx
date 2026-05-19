@@ -55,10 +55,6 @@ interface MockReview {
  * ────────────────────────────────────────────────────────────────────────── */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// XP→TL oranı (cart sayfası ile aynı, mock)
-// DEV2_API_READY: false — gerçek oran Dev2'nin /xp/apply-discount endpoint'inden gelecek
-const XP_TO_KURUS = 40; // 1 XP = 0,40 TL
-
 // Mock değerlendirmeler — DEV2_API_READY: false (gerçek incelemeler backend'de henüz yok)
 const MOCK_REVIEWS: MockReview[] = [
   {
