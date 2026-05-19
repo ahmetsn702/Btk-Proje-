@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Loader2, PackageX } from 'lucide-react';
+import { ArrowRight, Check, Loader2, PackageX } from 'lucide-react';
 import { api } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -42,6 +43,13 @@ const STATUS_META: Record<string, { label: string; bg: string; fg: string; dot: 
   },
   CANCELLED: { label: 'İptal', bg: '#F8E8E0', fg: '#93432A', dot: '#E28D7A' },
 };
+
+const TRACKING_STEPS = [
+  { status: 'PENDING', label: 'Sipariş Alındı' },
+  { status: 'PAID', label: 'Hazırlanıyor' },
+  { status: 'SHIPPED', label: 'Kargoya Verildi' },
+  { status: 'DELIVERED', label: 'Teslim Edildi' },
+];
 
 const fmtTLDecimal = (kurus: number) =>
   (kurus / 100).toLocaleString('tr-TR', {
@@ -95,7 +103,7 @@ export default function ProfileOrdersPage() {
         {loading ? (
           <div className="flex items-center justify-center gap-2 rounded-[12px] border border-[#ECE8E1] bg-white py-16 text-[13.5px] text-[#5C5953]">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Siparişler yükleniyor…
+            Siparişler yükleniyor...
           </div>
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-[12px] border border-[#ECE8E1] bg-white py-20">
@@ -146,7 +154,7 @@ function OrderCard({ order }: { order: Order }) {
             #{order.id.slice(0, 8).toUpperCase()}
           </span>
           <span className="text-[11px] text-[#CFCBC2]" aria-hidden>
-            ·
+            •
           </span>
           <span className="text-[12.5px] text-[#5C5953]">
             {new Date(order.createdAt).toLocaleDateString('tr-TR', {
@@ -156,7 +164,7 @@ function OrderCard({ order }: { order: Order }) {
             })}
           </span>
           <span className="text-[11px] text-[#CFCBC2]" aria-hidden>
-            ·
+            •
           </span>
           <span className="text-[12.5px] text-[#5C5953]">{itemCount} ürün</span>
         </div>
@@ -200,11 +208,17 @@ function OrderCard({ order }: { order: Order }) {
         )}
       </div>
 
+      {order.status === 'CANCELLED' ? null : (
+        <div className="px-5 pb-4">
+          <OrderTrackingStepper status={order.status} />
+        </div>
+      )}
+
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#F4F1EA] bg-[#FAFAF7] px-5 py-3.5">
         <div className="flex flex-wrap items-baseline gap-3">
           {order.xpDiscount > 0 && (
             <span className="rounded-full bg-[#F0F7F4] px-2.5 py-1 text-[11.5px] font-semibold text-[#3F7561]">
-              XP indirim −₺{fmtTLDecimal(order.xpDiscount)}
+              XP indirim -₺{fmtTLDecimal(order.xpDiscount)}
             </span>
           )}
           <span className="text-[12px] text-[#5C5953]">Toplam</span>
@@ -228,10 +242,63 @@ function OrderCard({ order }: { order: Order }) {
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────── *
- * /profile/orders + /profile/transactions için light tema overrides.
- * Sayfa unmount olunca otomatik kalkar — layout.tsx'e dokunulmadı.
- * ────────────────────────────────────────────────────────────────────────── */
+function getTrackingIndex(status: string) {
+  const index = TRACKING_STEPS.findIndex((step) => step.status === status);
+  return index >= 0 ? index : 0;
+}
+
+function OrderTrackingStepper({ status }: { status: string }) {
+  const activeIndex = getTrackingIndex(status);
+  const delivered = status === 'DELIVERED';
+
+  return (
+    <div className="grid grid-cols-4 gap-2 rounded-[12px] border border-[#ECE8E1] bg-[#FAFAF7] px-3 py-4">
+      {TRACKING_STEPS.map((step, index) => {
+        const completed = delivered || index < activeIndex;
+        const active = delivered ? index === TRACKING_STEPS.length - 1 : index === activeIndex;
+
+        return (
+          <div key={step.status} className="relative flex min-w-0 flex-col items-center gap-2">
+            {index > 0 && (
+              <span
+                className={cn(
+                  'absolute right-1/2 top-4 h-0.5 w-full -translate-x-4',
+                  completed ? 'bg-[#6FA58D]' : 'bg-[#ECE8E1]',
+                )}
+                aria-hidden
+              />
+            )}
+            <span
+              className={cn(
+                'relative z-10 grid h-8 w-8 place-items-center rounded-full border text-[12px] font-bold',
+                completed
+                  ? 'border-[#6FA58D] bg-[#6FA58D] text-white'
+                  : active
+                    ? 'border-[#6FA58D] bg-[#6FA58D] text-white'
+                    : 'border-[#DAD5CB] bg-white text-[#9A9A93]',
+              )}
+            >
+              {completed ? <Check className="h-4 w-4" aria-hidden /> : index + 1}
+            </span>
+            <span
+              className={cn(
+                'text-center text-[11px] leading-4',
+                active
+                  ? 'font-bold text-[#2A2A2A]'
+                  : completed
+                    ? 'font-semibold text-[#3F7561]'
+                    : 'text-[#5C5953]',
+              )}
+            >
+              {step.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ProfileLightThemeStyles() {
   return (
     <style jsx global>{`
