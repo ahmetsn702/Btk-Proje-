@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr">
       <body
-        className={`${inter.variable} ${spaceGrotesk.variable} font-sans flex min-h-screen flex-col`}
+        className={`${inter.variable} ${spaceGrotesk.variable} font-sans flex min-h-screen flex-col bg-[#FAFAF7]`}
       >
         <Web3ProviderWrapper>
           <AuthProvider>
